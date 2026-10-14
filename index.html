@@ -1,0 +1,3342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F1F2F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0E21" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lua Phase">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+/* Covers the phone's status bar area when the app runs full screen. */
+body::before { content: ""; position: fixed; z-index: 60; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--bg); }
+</style>
+<title>Lua Phase by Phase</title>
+<meta name="description" content="Learn Lua step by step, from your first print to coroutines, with a live editor that runs your code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: lesson map rail | reading column | workspace. The editor is a night-sky panel in both themes;
+   course progress is drawn as the moon ("lua") filling from new to full. */
+:root {
+  --bg: #F1F2F8;
+  --surface: #FFFFFF;
+  --ink: #151938;
+  --muted: #565C80;
+  --line: #DADDEB;
+  --chip: #E5E8F4;
+  --accent: #3442C6;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E6FB;
+  --good: #156F45;
+  --good-soft: #DFF2E8;
+  --warn: #7A4E00;
+  --warn-soft: #FAEFD8;
+  --bad: #A8231B;
+  --bad-soft: #FBE6E4;
+  --moon-lit: #F0D27A;
+  --moon-dark: #1F2558;
+  --moon-rim: #151938;
+  --night: #121634;
+  --night-2: #0C0F27;
+  --night-line: #272D59;
+  --night-ink: #E6E9FA;
+  --night-muted: #8A92C0;
+  --night-btn: #1E2350;
+  --sel: rgba(150, 162, 255, 0.38);
+  --t-kw: #FF5E6C;
+  --t-val: #C79DFF;
+  --t-fn: #6FB8FF;
+  --t-str: #8FE3A4;
+  --t-num: #FFB660;
+  --t-com: #7D87B8;
+  --t-op: #A9B1D9;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --code-size: 16px;
+  --header-h: 60px;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0E21; --surface: #12162E; --ink: #E7E9F7; --muted: #9BA1C6; --line: #262B4D; --chip: #1C2142;
+    --accent: #98A4FF; --accent-ink: #0B0E21; --accent-soft: #1D2250;
+    --good: #6AD9A0; --good-soft: #10291D; --warn: #F2C56C; --warn-soft: #2C2210; --bad: #FF9289; --bad-soft: #341514;
+    --moon-dark: #262D5E; --moon-rim: #3A4278;
+    --night: #080A1C; --night-2: #05071A; --night-line: #222849; --night-btn: #171C40;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0E21; --surface: #12162E; --ink: #E7E9F7; --muted: #9BA1C6; --line: #262B4D; --chip: #1C2142;
+  --accent: #98A4FF; --accent-ink: #0B0E21; --accent-soft: #1D2250;
+  --good: #6AD9A0; --good-soft: #10291D; --warn: #F2C56C; --warn-soft: #2C2210; --bad: #FF9289; --bad-soft: #341514;
+  --moon-dark: #262D5E; --moon-rim: #3A4278;
+  --night: #080A1C; --night-2: #05071A; --night-line: #222849; --night-btn: #171C40;
+  color-scheme: dark;
+}
+@media (min-width: 900px) and (hover: hover) { :root { --code-size: 15px; } }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 17px; line-height: 1.62;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+
+/* ---------- Header ---------- */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.topbar-inner { height: var(--header-h); display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-name { font-family: var(--display); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.02em; white-space: nowrap; }
+.brand-name span { color: var(--muted); font-weight: 600; }
+.phase-label { margin-left: auto; font-size: 0.86rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.phase-label b { color: var(--ink); font-weight: 700; }
+.menu-btn {
+  display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: 999px; padding: 6px 12px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+}
+.menu-btn svg { width: 16px; height: 16px; }
+@media (max-width: 520px) {
+  .brand-name span { display: none; }
+  .phase-label .phase-name { display: none; }
+}
+
+/* ---------- Shell ---------- */
+.shell { display: grid; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 960px) {
+  .shell { grid-template-columns: 272px minmax(0, 1fr); }
+  .menu-btn { display: none; }
+}
+
+/* ---------- Course map ---------- */
+.course-nav {
+  background: var(--bg); border-right: 1px solid var(--line);
+  padding: 20px 14px 28px 16px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+@media (min-width: 960px) {
+  .course-nav {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--header-h));
+    height: calc(100vh - var(--header-h) - env(safe-area-inset-top, 0px)); overflow-y: auto;
+  }
+}
+@media (max-width: 959px) {
+  .course-nav {
+    position: fixed; z-index: 50; top: 0; bottom: 0; left: 0;
+    width: min(86vw, 330px); overflow-y: auto;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    transform: translateX(-104%); transition: transform 0.25s ease; visibility: hidden;
+    box-shadow: 0 0 40px rgba(5, 8, 30, 0.25);
+  }
+  body.nav-open .course-nav { transform: none; visibility: visible; }
+  .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(8, 10, 30, 0.45); }
+}
+.nav-close {
+  display: none; align-self: flex-end; border: 0; background: var(--chip); border-radius: 999px;
+  padding: 4px 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+}
+@media (max-width: 959px) { .nav-close { display: inline-block; } }
+
+.moon-card { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; padding: 4px 4px 2px; }
+.moon-card svg { width: 72px; height: 72px; display: block; }
+.moon-card h2 { margin: 0; font-family: var(--display); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+.moon-card p { margin: 2px 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
+
+.level { display: flex; flex-direction: column; gap: 2px; }
+.level-head {
+  display: flex; align-items: center; gap: 8px; padding: 0 6px 4px;
+  font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted);
+}
+.level-head svg { width: 14px; height: 14px; flex: none; }
+.level-head .count { margin-left: auto; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.lesson-link {
+  display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: center; text-align: left;
+  width: 100%; border: 0; background: transparent; border-radius: 8px; padding: 6px 8px;
+  font-size: 0.95rem; line-height: 1.3; cursor: pointer; color: var(--ink);
+}
+.lesson-link:hover:not(:disabled) { background: var(--chip); }
+.lesson-link .mark {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 0.72rem; font-weight: 700; color: var(--muted); border: 1.5px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.lesson-link .mark svg { width: 12px; height: 12px; }
+.lesson-link.is-done .mark { background: var(--good); border-color: var(--good); color: var(--bg); }
+.lesson-link.is-current { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.lesson-link.is-current .mark { border-color: var(--accent); color: var(--accent); }
+.lesson-link.is-current.is-done .mark { background: var(--good); border-color: var(--good); color: var(--bg); }
+.lesson-link:disabled { cursor: not-allowed; color: var(--muted); opacity: 0.72; }
+.lesson-link:disabled .mark { border-style: dashed; }
+
+.nav-tools { margin-top: auto; padding: 14px 6px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; font-size: 0.86rem; color: var(--muted); }
+.nav-tools p { margin: 0; line-height: 1.45; }
+.link-btn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; cursor: pointer; text-align: left; font-size: 0.86rem; }
+.confirm-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.confirm-row .btn { padding: 5px 12px; font-size: 0.84rem; }
+
+/* ---------- Main ---------- */
+main {
+  min-width: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+@media (min-width: 960px) { main { padding-left: 40px; padding-right: max(32px, env(safe-area-inset-right, 0px)); } }
+.lesson-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; max-width: 760px; margin: 0 auto; }
+@media (min-width: 1280px) {
+  .lesson-grid { max-width: 1480px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 48px; align-items: start; }
+  .workspace {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--header-h) + 20px);
+    max-height: calc(100vh - var(--header-h) - 40px); overflow-y: auto; padding-right: 4px;
+  }
+}
+
+.eyebrow {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
+  font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted);
+}
+.eyebrow .done-chip { color: var(--good); }
+.lesson h1 {
+  font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 1.3rem + 2.6vw, 3rem);
+  line-height: 1.04; letter-spacing: -0.03em; margin: 10px 0 22px; text-wrap: balance;
+}
+.lesson-body { display: flex; flex-direction: column; gap: 16px; }
+.lesson-body p { margin: 0; max-width: 65ch; }
+.lesson-body ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
+.lesson-body li::marker { color: var(--accent); }
+code {
+  font-family: var(--mono); font-size: 0.88em; background: var(--chip); color: var(--ink);
+  padding: 0.08em 0.36em; border-radius: 5px; white-space: nowrap;
+}
+.note { background: var(--accent-soft); border-radius: var(--radius); padding: 14px 16px; max-width: 65ch; }
+.note .note-label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 4px; }
+.note p { margin: 0; }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+.lesson-body table { border-collapse: collapse; font-size: 0.95rem; min-width: 100%; }
+.lesson-body th, .lesson-body td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.lesson-body th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+.lesson-body td:first-child { white-space: nowrap; }
+
+/* Example code blocks */
+.example { margin: 0; background: var(--night); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--night-line); }
+.example-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--night-line); }
+.example-bar span { font-family: var(--mono); font-size: 0.74rem; color: var(--night-muted); letter-spacing: 0.04em; }
+.code-block {
+  margin: 0; padding: 12px 16px 14px; overflow-x: auto; color: var(--night-ink);
+  font-family: var(--mono); font-size: calc(var(--code-size) - 1px); line-height: 1.6; white-space: pre; tab-size: 2; font-variant-ligatures: none;
+}
+.example-out {
+  margin: 0; padding: 10px 16px 12px; background: var(--night-2); border-top: 1px dashed var(--night-line);
+  color: var(--night-ink); font-family: var(--mono); font-size: calc(var(--code-size) - 2px); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.example-out .out-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--night-muted); margin-bottom: 4px; font-family: var(--body); font-weight: 700; }
+.example-out .err { color: #FF8C8C; }
+
+.t-kw { color: var(--t-kw); font-weight: 600; }
+.t-val { color: var(--t-val); }
+.t-fn { color: var(--t-fn); }
+.t-str { color: var(--t-str); }
+.t-num { color: var(--t-num); }
+.t-com { color: var(--t-com); font-style: italic; }
+.t-op { color: var(--t-op); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 999px; padding: 7px 14px; font-size: 0.9rem; font-weight: 700; cursor: pointer; line-height: 1.2;
+  text-decoration: none;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-night {
+  border: 1px solid var(--night-line); background: var(--night-btn); color: var(--night-ink);
+  border-radius: 999px; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+}
+.btn-night:hover:not(:disabled) { border-color: var(--night-muted); }
+.btn-night:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-run { background: #7B8BFF; border-color: #7B8BFF; color: #0B0E21; }
+.btn-run:hover:not(:disabled) { background: #93A0FF; border-color: #93A0FF; }
+.btn svg, .btn-night svg { width: 14px; height: 14px; flex: none; }
+
+/* Lesson footer nav */
+.pager { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); }
+.pager .btn { max-width: 100%; }
+.pager .locked-note { font-size: 0.88rem; color: var(--muted); align-self: center; }
+
+/* ---------- Workspace ---------- */
+.workspace { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.task h2 { font-family: var(--display); font-weight: 800; font-size: 1.45rem; letter-spacing: -0.02em; margin: 0 0 6px; }
+.task p { margin: 0; }
+.task-text { max-width: 62ch; }
+.expected { margin-top: 12px; }
+.expected-label, .panel-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.expected pre {
+  margin: 4px 0 0; padding: 10px 14px; background: var(--chip); border-radius: 10px;
+  font-family: var(--mono); font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.hint-box { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--ink); }
+.hint-box b { color: var(--warn); }
+
+.editor-shell { background: var(--night); border-radius: 14px; border: 1px solid var(--night-line); overflow: hidden; }
+.editor-shell:focus-within { border-color: #7B8BFF; box-shadow: 0 0 0 3px rgba(123, 139, 255, 0.25); }
+.editor-bar { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--night-line); flex-wrap: wrap; }
+.file-tab { font-family: var(--mono); font-size: 0.8rem; color: var(--night-ink); display: inline-flex; align-items: center; gap: 8px; }
+.file-tab i { width: 8px; height: 8px; border-radius: 50%; background: var(--moon-lit); display: inline-block; }
+.editor-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.kbd { font-size: 0.72rem; color: var(--night-muted); font-weight: 400; }
+@media (hover: none) { .kbd { display: none; } }
+
+.symbols { display: none; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--night-line); overflow-x: auto; scrollbar-width: none; }
+.symbols::-webkit-scrollbar { display: none; }
+@media (pointer: coarse), (max-width: 700px) { .symbols { display: flex; } }
+.sym {
+  flex: none; min-width: 38px; height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--night-line);
+  background: var(--night-btn); color: var(--night-ink); font-family: var(--mono); font-size: 1rem; cursor: pointer;
+  touch-action: manipulation;
+}
+.sym:active { background: #2C3370; }
+
+.ed-scroll { overflow-x: auto; overflow-y: hidden; position: relative; }
+.ed-row { display: flex; width: max-content; min-width: 100%; }
+.ed-gutter {
+  position: sticky; left: 0; z-index: 2; flex: none; background: var(--night);
+  padding: 14px 10px 14px 12px; min-width: 44px; text-align: right; user-select: none;
+  font-family: var(--mono); font-size: var(--code-size); line-height: 1.6; color: #4F5888; white-space: pre;
+  border-right: 1px solid var(--night-line); font-variant-numeric: tabular-nums;
+}
+.ed-gutter .ln-err { color: #FF8C8C; font-weight: 700; }
+.ed-stack { flex: 1 0 auto; display: grid; min-width: 0; position: relative; }
+.ed-stack > pre, .ed-stack > textarea {
+  grid-area: 1 / 1; margin: 0; border: 0; border-radius: 0;
+  padding: 14px 20px 14px 14px;
+  font-family: var(--mono); font-size: var(--code-size); line-height: 1.6; letter-spacing: 0;
+  white-space: pre; tab-size: 2; font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0;
+  text-rendering: optimizeSpeed;
+}
+.ed-hl { color: var(--night-ink); pointer-events: none; min-height: calc(var(--code-size) * 1.6 * 9 + 28px); }
+.ed-input {
+  width: 100%; height: 100%; min-width: 0; resize: none; overflow: hidden; outline: none;
+  background: transparent; color: transparent; -webkit-text-fill-color: transparent;
+  caret-color: #FFFFFF; -webkit-appearance: none; appearance: none;
+}
+.ed-input::selection { background: var(--sel); color: transparent; -webkit-text-fill-color: transparent; }
+.ed-measure { position: absolute; visibility: hidden; white-space: pre; font-family: var(--mono); font-size: var(--code-size); font-variant-ligatures: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 9px 14px 11px; border-top: 1px solid var(--night-line); font-size: 0.78rem; color: var(--night-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); }
+.legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+.console { background: var(--night-2); border-radius: 14px; border: 1px solid var(--night-line); overflow: hidden; }
+.console-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--night-line); }
+.console-bar .panel-label { color: var(--night-muted); }
+.console-bar .run-state { font-size: 0.78rem; color: var(--night-muted); }
+.console-out {
+  margin: 0; padding: 12px 14px 14px; min-height: 64px; max-height: 320px; overflow: auto;
+  color: var(--night-ink); font-family: var(--mono); font-size: calc(var(--code-size) - 1px); line-height: 1.55;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.console-out .muted { color: var(--night-muted); font-style: italic; }
+.console-out .err { color: #FF8C8C; }
+
+.verdict:empty { display: none; }
+.verdict { border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.verdict h3 { margin: 0; font-family: var(--display); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.verdict h3 svg { width: 20px; height: 20px; flex: none; }
+.verdict p { margin: 0; max-width: 62ch; }
+.verdict.pass { background: var(--good-soft); }
+.verdict.pass h3 { color: var(--good); }
+.verdict.fail { background: var(--warn-soft); }
+.verdict.fail h3 { color: var(--warn); }
+.verdict.error { background: var(--bad-soft); }
+.verdict.error h3 { color: var(--bad); }
+.verdict.info { background: var(--chip); }
+.verdict .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.diff { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 4px; }
+.diff > div { min-width: 0; }
+.diff pre {
+  margin: 4px 0 0; padding: 8px 10px; background: var(--surface); border-radius: 8px; border: 1px solid var(--line);
+  font-family: var(--mono); font-size: 0.86rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.diff mark { background: var(--warn-soft); color: var(--warn); font-weight: 700; border-radius: 3px; outline: 1px solid var(--warn); }
+.verdict ul { margin: 0; padding-left: 1.2em; }
+
+.solution-box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.solution-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; flex-wrap: wrap; }
+.solution-box .code-block { background: var(--night); }
+
+.loading-note { font-size: 0.86rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+.moon-bg { fill: var(--moon-dark); stroke: var(--moon-rim); stroke-width: 1; }
+.moon-lit { fill: var(--moon-lit); }
+.brand svg { width: 30px; height: 30px; flex: none; display: block; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.lua-said { font-size: 0.9rem; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 0.92em; color: var(--ink); overflow-wrap: anywhere; }
+.legend .t-kw, .legend .t-val, .legend .t-fn, .legend .t-str, .legend .t-num, .legend .t-com { font-weight: 600; }
+.legend em { font-style: normal; color: var(--night-muted); font-family: var(--body); }
+
+#nav-levels { display: flex; flex-direction: column; gap: 18px; }
+.btn-night { display: inline-flex; align-items: center; gap: 6px; line-height: 1.2; }
+.btn-run .kbd { color: rgba(11, 14, 33, 0.62); font-weight: 600; }
+
+/* "What happens" sits right under the example it explains */
+.lesson-body .what { margin-top: -6px; padding-left: 2px; }
+.what strong { color: var(--accent); }
+
+/* Numbered steps (lesson body and the task) */
+ol.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-width: 62ch; }
+ol.steps > li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; }
+ol.steps > li::before {
+  content: counter(step); width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; margin-top: 1px;
+  background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 0.85rem; font-variant-numeric: tabular-nums;
+}
+.task-text { display: flex; flex-direction: column; gap: 12px; }
+.task-outro { color: var(--muted); }
+
+</style>
+
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button type="button" class="menu-btn" id="menu-btn" aria-controls="course-nav" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Lessons
+    </button>
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true" data-moon="course"><circle class="moon-bg" cx="20" cy="20" r="18"/><path class="moon-lit" d=""/></svg>
+      <span class="brand-name">Lua <span>Phase by Phase</span></span>
+    </div>
+    <div class="phase-label" id="phase-label" aria-live="polite"></div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="course-nav" id="course-nav" aria-label="Lessons">
+    <button type="button" class="nav-close" id="nav-close">Close</button>
+    <div class="moon-card">
+      <svg viewBox="0 0 40 40" aria-hidden="true" data-moon="course"><circle class="moon-bg" cx="20" cy="20" r="18"/><path class="moon-lit" d=""/></svg>
+      <div><h2 id="moon-title">New moon</h2><p id="moon-sub"></p></div>
+    </div>
+    <div id="nav-levels"></div>
+    <div class="nav-tools" id="nav-tools"></div>
+  </aside>
+
+  <main id="main">
+    <div class="lesson-grid">
+      <article class="lesson" id="lesson" aria-labelledby="lesson-title"></article>
+
+      <section class="workspace" aria-labelledby="task-title">
+        <div class="task">
+          <h2 id="task-title">Your turn</h2>
+          <div class="task-text" id="task-text"></div>
+          <div class="expected" id="expected" hidden>
+            <span class="expected-label">Expected output</span>
+            <pre id="expected-out"></pre>
+          </div>
+          <div class="hint-box" id="hint-box" hidden></div>
+        </div>
+
+        <div class="editor-shell">
+          <div class="editor-bar">
+            <span class="file-tab"><i></i>main.lua</span>
+            <div class="editor-actions">
+              <button type="button" class="btn-night" id="hint-btn" aria-expanded="false" aria-controls="hint-box">Hint</button>
+              <button type="button" class="btn-night" id="solution-btn" aria-controls="solution-box" hidden>Solution</button>
+              <button type="button" class="btn-night" id="reset-btn">Reset</button>
+              <button type="button" class="btn-night btn-run" id="run-btn">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 3v10l8.5-5z" fill="currentColor"/></svg>Run <span class="kbd" id="run-kbd"></span>
+              </button>
+            </div>
+          </div>
+          <div class="symbols" id="symbols" role="toolbar" aria-label="Insert a symbol"></div>
+          <div class="ed-scroll" id="code-scroll">
+            <div class="ed-row">
+              <div class="ed-gutter" id="code-gutter" aria-hidden="true">1</div>
+              <div class="ed-stack">
+                <pre class="ed-hl" id="code-hl" aria-hidden="true"></pre>
+                <textarea class="ed-input" id="code-input" rows="1" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" aria-label="Lua code editor. Press Escape then Tab to leave the editor."></textarea>
+                <span class="ed-measure" id="code-measure" aria-hidden="true">MMMMMMMMMM</span>
+              </div>
+            </div>
+          </div>
+          <div class="legend" aria-label="Color key">
+            <span><b class="t-kw">if then end</b> <em>keywords</em></span>
+            <span><b class="t-val">true nil</b> <em>values</em></span>
+            <span><b class="t-fn">print</b> <em>built-ins</em></span>
+            <span><b class="t-str">"text"</b> <em>strings</em></span>
+            <span><b class="t-num">42</b> <em>numbers</em></span>
+            <span><b class="t-com">-- note</b> <em>comments</em></span>
+          </div>
+        </div>
+
+        <div class="console" id="console">
+          <div class="console-bar"><span class="panel-label">Output</span><span class="run-state" id="run-state"></span></div>
+          <pre class="console-out" id="console-out" aria-live="polite"></pre>
+        </div>
+
+        <div class="verdict" id="verdict" role="status" aria-live="polite"></div>
+
+        <div class="solution-box" id="solution-box" hidden>
+          <div class="solution-head">
+            <span class="panel-label">One possible solution</span>
+            <div class="confirm-row">
+              <button type="button" class="btn" id="use-solution">Put it in the editor</button>
+              <button type="button" class="btn" id="hide-solution">Hide</button>
+            </div>
+          </div>
+          <pre class="code-block" id="solution-code"></pre>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+
+
+<script>
+window.LUA_ENGINE_URL = "lua.js";
+</script>
+<script>
+/* Lua tokenizer, highlighter, and pure editing helpers (pairing, Enter, Backspace). */
+var LuaLex = (function () {
+  var KEYWORDS = {};
+  "and break do else elseif end for function goto if in local not or repeat return then until while"
+    .split(" ").forEach(function (k) { KEYWORDS[k] = true; });
+  var VALUES = { "true": true, "false": true, "nil": true, "self": true };
+  var BUILTINS = {};
+  ("print type tostring tonumber pairs ipairs next select error assert pcall xpcall setmetatable getmetatable " +
+    "rawget rawset rawequal rawlen require unpack load dofile collectgarbage table string math os io coroutine utf8 _G _VERSION")
+    .split(" ").forEach(function (k) { BUILTINS[k] = true; });
+
+  var OPS3 = ["..."];
+  var OPS2 = ["..", "==", "~=", "<=", ">=", "//", "::", "<<", ">>"];
+  var NUM_RE = /^(?:0[xX][0-9a-fA-F]*(?:\.[0-9a-fA-F]*)?(?:[pP][+-]?\d+)?|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/;
+  var LONG_OPEN = /^\[(=*)\[/;
+
+  function tokenize(src) {
+    var toks = [], i = 0, n = src.length, prevSig = null;
+    function push(type, start, end, open) {
+      var t = { type: type, text: src.slice(start, end), start: start, end: end, open: !!open };
+      toks.push(t);
+      if (type !== "ws" && type !== "com") prevSig = t;
+    }
+    while (i < n) {
+      var c = src[i], j, m;
+      if (c === " " || c === "\t" || c === "\n" || c === "\r") {
+        j = i + 1;
+        while (j < n && (src[j] === " " || src[j] === "\t" || src[j] === "\n" || src[j] === "\r")) j++;
+        push("ws", i, j); i = j; continue;
+      }
+      if (c === "-" && src[i + 1] === "-") {
+        m = LONG_OPEN.exec(src.slice(i + 2, i + 40));
+        if (m) {
+          var closeC = "]" + m[1] + "]";
+          var k = src.indexOf(closeC, i + 2 + m[0].length);
+          j = k < 0 ? n : k + closeC.length;
+          push("com", i, j, k < 0); i = j; continue;
+        }
+        j = src.indexOf("\n", i); if (j < 0) j = n;
+        push("com", i, j, true); i = j; continue;
+      }
+      if (c === "[" && (src[i + 1] === "[" || src[i + 1] === "=")) {
+        m = LONG_OPEN.exec(src.slice(i, i + 40));
+        if (m) {
+          var closeS = "]" + m[1] + "]";
+          var k2 = src.indexOf(closeS, i + m[0].length);
+          j = k2 < 0 ? n : k2 + closeS.length;
+          push("str", i, j, k2 < 0); i = j; continue;
+        }
+      }
+      if (c === '"' || c === "'") {
+        j = i + 1;
+        var closed = false;
+        while (j < n) {
+          var d = src[j];
+          if (d === "\\") { j += 2; continue; }
+          if (d === c) { j++; closed = true; break; }
+          if (d === "\n") break;
+          j++;
+        }
+        if (j > n) j = n;
+        push("str", i, j, !closed); i = j; continue;
+      }
+      if ((c >= "0" && c <= "9") || (c === "." && src[i + 1] >= "0" && src[i + 1] <= "9")) {
+        m = NUM_RE.exec(src.slice(i, i + 64));
+        j = i + (m ? m[0].length : 1);
+        push("num", i, j); i = j; continue;
+      }
+      if (/[A-Za-z_]/.test(c)) {
+        j = i + 1;
+        while (j < n && /[A-Za-z0-9_]/.test(src[j])) j++;
+        var word = src.slice(i, j);
+        var afterDot = prevSig && (prevSig.text === "." || prevSig.text === ":");
+        var type = "id";
+        if (KEYWORDS[word]) type = "kw";
+        else if (afterDot) type = "id";
+        else if (VALUES[word]) type = "val";
+        else if (BUILTINS[word]) type = "fn";
+        push(type, i, j); i = j; continue;
+      }
+      var three = src.substr(i, 3), two = src.substr(i, 2);
+      if (OPS3.indexOf(three) >= 0) { push("op", i, i + 3); i += 3; continue; }
+      if (OPS2.indexOf(two) >= 0) { push("op", i, i + 2); i += 2; continue; }
+      push("op", i, i + 1); i += 1;
+    }
+    return toks;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  var CLASS = { kw: "t-kw", val: "t-val", fn: "t-fn", str: "t-str", num: "t-num", com: "t-com", op: "t-op" };
+
+  function highlight(src) {
+    var toks = tokenize(src), html = "";
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i], cls = CLASS[t.type];
+      html += cls ? '<span class="' + cls + '">' + escapeHtml(t.text) + "</span>" : escapeHtml(t.text);
+    }
+    return html;
+  }
+
+  function stripComments(src) {
+    return tokenize(src).map(function (t) { return t.type === "com" ? " " : t.text; }).join("");
+  }
+
+  function hasKeyword(src, word) {
+    return tokenize(src).some(function (t) { return t.type === "kw" && t.text === word; });
+  }
+
+  // How many `end`s (and `until`s) the code is still missing.
+  function blockBalance(src) {
+    var end = 0, until = 0;
+    tokenize(src).forEach(function (t) {
+      if (t.type !== "kw") return;
+      if (t.text === "function" || t.text === "if" || t.text === "do") end++;
+      else if (t.text === "end") end--;
+      else if (t.text === "repeat") until++;
+      else if (t.text === "until") until--;
+    });
+    return { end: end, until: until };
+  }
+
+  // Is position `pos` inside a string or comment? Returns "str", "com" or null.
+  function contextAt(v, pos) {
+    var toks = tokenize(v.slice(0, pos));
+    var last = toks[toks.length - 1];
+    if (!last) return null;
+    if (last.type === "str" && last.open) return "str";
+    if (last.type === "com" && last.open) return "com";
+    return null;
+  }
+
+  var PAIRS = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+  var WORD = /[A-Za-z0-9_]/;
+
+  // Typing one character. Returns an edit {start, end, text, caret, selEnd} or null for default behaviour.
+  function typeChar(v, s, e, ch) {
+    var next = v.charAt(e), prev = v.charAt(s - 1);
+    if (s !== e && PAIRS[ch]) {
+      var sel = v.slice(s, e);
+      return { start: s, end: e, text: ch + sel + PAIRS[ch], caret: s + 1, selEnd: s + 1 + sel.length };
+    }
+    if (s === e && (ch === ")" || ch === "]" || ch === "}" || ch === '"' || ch === "'") && next === ch) {
+      return { start: s, end: s, text: "", caret: s + 1 };
+    }
+    if (ch === '"' || ch === "'") {
+      if (WORD.test(prev) || prev === "\\") return null;
+      if (WORD.test(next)) return null;
+      if (contextAt(v, s)) return null;
+      return { start: s, end: e, text: ch + ch, caret: s + 1 };
+    }
+    if (ch === "(" || ch === "[" || ch === "{") {
+      if (WORD.test(next)) return null;
+      if (contextAt(v, s)) return null;
+      return { start: s, end: e, text: ch + PAIRS[ch], caret: s + 1 };
+    }
+    return null;
+  }
+
+  function enter(v, s, e) {
+    var lineStart = v.lastIndexOf("\n", s - 1) + 1;
+    var lineEnd = v.indexOf("\n", e); if (lineEnd < 0) lineEnd = v.length;
+    var before = v.slice(lineStart, s), after = v.slice(e, lineEnd);
+    var indent = (before.match(/^[ \t]*/) || [""])[0];
+    var inner = indent + "  ";
+    var plain = { start: s, end: e, text: "\n" + indent, caret: s + 1 + indent.length };
+    if (contextAt(v, s) === "str") return plain;
+
+    var toks = tokenize(before).filter(function (t) { return t.type !== "ws" && t.type !== "com"; });
+    var last = toks[toks.length - 1];
+    if (!last) return plain;
+
+    var opener = null;
+    if (last.type === "kw" && (last.text === "then" || last.text === "do" || last.text === "else" || last.text === "repeat")) {
+      opener = last.text;
+    } else if (last.text === ")") {
+      var net = 0;
+      toks.forEach(function (t) {
+        if (t.type !== "kw") return;
+        if (t.text === "function" || t.text === "if" || t.text === "do") net++;
+        else if (t.text === "end") net--;
+      });
+      if (net > 0 && toks.some(function (t) { return t.type === "kw" && t.text === "function"; })) opener = "function";
+    } else if (last.text === "{" || last.text === "(" || last.text === "[") {
+      opener = "bracket";
+    }
+    if (!opener) return plain;
+
+    if (opener === "bracket") {
+      if (v.charAt(e) === PAIRS[last.text]) {
+        return { start: s, end: e, text: "\n" + inner + "\n" + indent, caret: s + 1 + inner.length };
+      }
+      return { start: s, end: e, text: "\n" + inner, caret: s + 1 + inner.length };
+    }
+    var open = { start: s, end: e, text: "\n" + inner, caret: s + 1 + inner.length };
+    if (opener === "else" || after.trim() !== "") return open;
+
+    var bal = blockBalance(v.slice(0, s) + v.slice(e));
+    var needs = opener === "repeat" ? bal.until > 0 : bal.end > 0;
+    if (!needs) return open;
+    var closer = opener === "repeat" ? "until " : "end";
+    return { start: s, end: e, text: "\n" + inner + "\n" + indent + closer, caret: s + 1 + inner.length };
+  }
+
+  function backspace(v, s, e) {
+    if (s !== e || s === 0) return null;
+    var prev = v.charAt(s - 1), next = v.charAt(s);
+    if (PAIRS[prev] && next === PAIRS[prev]) return { start: s - 1, end: s + 1, text: "", caret: s - 1 };
+    var lineStart = v.lastIndexOf("\n", s - 1) + 1;
+    var before = v.slice(lineStart, s);
+    if (before.length >= 2 && /^ +$/.test(before)) {
+      var cut = before.length % 2 === 0 ? 2 : 1;
+      return { start: s - cut, end: s, text: "", caret: s - cut };
+    }
+    return null;
+  }
+
+  return {
+    tokenize: tokenize, highlight: highlight, escapeHtml: escapeHtml, stripComments: stripComments,
+    hasKeyword: hasKeyword, blockBalance: blockBalance, contextAt: contextAt,
+    typeChar: typeChar, enter: enter, backspace: backspace
+  };
+})();
+
+if (typeof module !== "undefined") module.exports = LuaLex;
+
+/* Runs learner code in a fresh Lua 5.3 state (Fengari) and captures output. */
+function createLuaRunner(fengari) {
+  var lua = fengari.lua, lauxlib = fengari.lauxlib, lualib = fengari.lualib;
+  var toLua = fengari.to_luastring, toJs = fengari.to_jsstring;
+  var CHUNK = "your code";
+  var MAX_STEPS = 6000000;
+  var MAX_MS = 4000;
+  var HOOK_EVERY = 1000;
+  var MAX_OUT = 20000;
+  var CHECK_MARK = "\u0001CHECK:";
+  var EXPECT = "local function expect(ok, msg) if not ok then error('\\1CHECK:' .. tostring(msg), 0) end end\n";
+
+  function luaValueToString(L, idx) {
+    var s = toJs(lauxlib.luaL_tolstring(L, idx));
+    lua.lua_pop(L, 1);
+    return s;
+  }
+
+  function run(code, test) {
+    var L = lauxlib.luaL_newstate();
+    lualib.luaL_openlibs(L);
+
+    var out = "";
+    var truncated = false;
+    var checkMark = -1;
+    function write(s) {
+      if (out.length >= MAX_OUT) { truncated = true; return; }
+      out += s;
+      if (out.length > MAX_OUT) { out = out.slice(0, MAX_OUT); truncated = true; }
+    }
+
+    lua.lua_pushjsfunction(L, function (L) {
+      var n = lua.lua_gettop(L), parts = [];
+      for (var i = 1; i <= n; i++) parts.push(luaValueToString(L, i));
+      write(parts.join("\t") + "\n");
+      return 0;
+    });
+    lua.lua_setglobal(L, toLua("print"));
+
+    // The browser build has no io library, so provide io.write for printing without a new line.
+    lua.lua_getglobal(L, toLua("io"));
+    if (!lua.lua_istable(L, -1)) {
+      lua.lua_pop(L, 1);
+      lua.lua_newtable(L);
+      lua.lua_pushvalue(L, -1);
+      lua.lua_setglobal(L, toLua("io"));
+    }
+    lua.lua_pushjsfunction(L, function (L) {
+      var n = lua.lua_gettop(L);
+      for (var i = 1; i <= n; i++) write(toJs(lauxlib.luaL_checklstring(L, i)));
+      return 0;
+    });
+    lua.lua_setfield(L, -2, toLua("write"));
+    lua.lua_pushnil(L);
+    lua.lua_setfield(L, -2, toLua("read"));
+    lua.lua_pop(L, 1);
+
+    lua.lua_pushjsfunction(L, function () { checkMark = out.length; return 0; });
+    lua.lua_setglobal(L, toLua("__begin_check"));
+
+    var steps = 0, started = Date.now(), killed = false;
+    function hook(L) {
+      steps += HOOK_EVERY;
+      if (killed || steps > MAX_STEPS || Date.now() - started > MAX_MS) {
+        if (!killed) killed = true;
+        // Fire on every instruction from now on, so a pcall can't swallow the stop.
+        lua.lua_sethook(L, hook, lua.LUA_MASKCOUNT, 1);
+        lauxlib.luaL_error(L, toLua("program ran too long"));
+      }
+    }
+    lua.lua_sethook(L, hook, lua.LUA_MASKCOUNT, HOOK_EVERY);
+
+    var userLines = code.split("\n").length;
+    var result = { output: "", truncated: false, error: null, userLines: userLines };
+
+    function finish(err) {
+      result.output = checkMark >= 0 ? out.slice(0, checkMark) : out;
+      result.truncated = truncated;
+      result.error = err;
+      return result;
+    }
+
+    function describe(raw, phase) {
+      if (killed) return { kind: "timeout", line: null, message: "Your program ran too long, so it was stopped.", raw: raw };
+      if (raw.indexOf(CHECK_MARK) === 0) return { kind: "check", line: null, message: raw.slice(CHECK_MARK.length), raw: raw };
+      var m = /^your code:(\d+): ([\s\S]*)$/.exec(raw);
+      var line = m ? parseInt(m[1], 10) : null;
+      var msg = m ? m[2] : raw;
+      if (line !== null && line > userLines) return { kind: "checkcrash", line: null, message: msg, raw: raw };
+      return { kind: phase, line: line, message: msg, raw: raw };
+    }
+
+    // 1. Compile the learner's code on its own so syntax errors point at their lines.
+    var status = lauxlib.luaL_loadbuffer(L, toLua(code), null, toLua("=" + CHUNK));
+    if (status !== lua.LUA_OK) {
+      return finish(describe(luaValueToString(L, -1), "syntax"));
+    }
+
+    // 2. With a test, append it to the same chunk so it can see top-level locals.
+    var separateTest = false;
+    if (test) {
+      var combined = code + "\n;__begin_check() do\n" + EXPECT + test + "\nend\n";
+      lua.lua_pop(L, 1);
+      if (lauxlib.luaL_loadbuffer(L, toLua(combined), null, toLua("=" + CHUNK)) !== lua.LUA_OK) {
+        lua.lua_pop(L, 1);
+        lauxlib.luaL_loadbuffer(L, toLua(code), null, toLua("=" + CHUNK));
+        separateTest = true;
+      }
+    }
+
+    status = lua.lua_pcall(L, 0, 0, 0);
+    if (status !== lua.LUA_OK) {
+      return finish(describe(luaValueToString(L, -1), "runtime"));
+    }
+
+    if (test && separateTest) {
+      checkMark = out.length;
+      if (lauxlib.luaL_loadbuffer(L, toLua(EXPECT + test), null, toLua("=check")) === lua.LUA_OK) {
+        if (lua.lua_pcall(L, 0, 0, 0) !== lua.LUA_OK) {
+          var raw = luaValueToString(L, -1);
+          var d = describe(raw, "runtime");
+          if (d.kind === "runtime" && d.line === null) d.kind = "checkcrash";
+          if (/^check:\d+: /.test(raw)) { d.kind = "checkcrash"; d.message = raw.replace(/^check:\d+: /, ""); }
+          return finish(d);
+        }
+      }
+    }
+    return finish(null);
+  }
+
+  return { run: run };
+}
+
+if (typeof module !== "undefined") module.exports = createLuaRunner;
+
+/* Decides whether a learner's code passes a lesson. */
+function normalizeOutput(s) {
+  return String(s).replace(/\r/g, "").replace(/[ \t]+$/gm, "").replace(/\s+$/, "");
+}
+
+var FRIENDLY = [
+  [/attempt to call a nil value \(method '([^']+)'\)/, function (m) { return "There's no method named `" + m[1] + "` on this table. Check the spelling, and check that you defined it before calling it."; }],
+  [/attempt to call a nil value \((?:global|field|upvalue|local) '([^']+)'\)/, function (m) { return "Lua can't find a function named `" + m[1] + "`. Check the spelling and capital letters, and make sure it's defined above the line that calls it."; }],
+  [/attempt to (?:index|call) a nil value \(local 'self'\)/, function () { return "`self` is nil here. Call methods with a colon, like `obj:method()`, not a dot."; }],
+  [/attempt to index a nil value \((?:global|local|field|upvalue) '([^']+)'\)/, function (m) { return "`" + m[1] + "` is nil, so you can't use a dot or brackets on it. Check that it was created and is spelled the same way everywhere."; }],
+  [/attempt to perform arithmetic on a nil value(?: \((?:global|local|field|upvalue) '([^']+)'\))?/, function (m) { return m[1] ? "`" + m[1] + "` is nil, so Lua can't do math with it. Check the spelling, or give it a value first." : "One of the values in this math is nil. Check the spelling of your variables."; }],
+  [/attempt to perform arithmetic on a string value/, function () { return "You're doing math with text that isn't a number. Use `..` to join text, or `tonumber()` to convert it first."; }],
+  [/attempt to concatenate a nil value(?: \((?:global|local|field|upvalue) '([^']+)'\))?/, function (m) { return m[1] ? "You're joining text with `..`, but `" + m[1] + "` is nil." : "You're joining text with `..`, but one of the pieces is nil."; }],
+  [/attempt to concatenate a (boolean|table|function) value/, function (m) { return "`..` only joins strings and numbers, and this piece is a " + m[1] + ". Wrap it in `tostring()` first."; }],
+  [/attempt to compare (\w+) with (\w+)/, function (m) { return "You're comparing a " + m[1] + " with a " + m[2] + ". Compare numbers with numbers and text with text."; }],
+  [/'end' expected/, function () { return "A block is missing its `end`. Every `if`, `for`, `while`, and `function` needs one."; }],
+  [/'?<eof>'? expected near 'end'/, function () { return "There's an extra `end` here. Remove one."; }],
+  [/unfinished string/, function () { return "A string is missing its closing quote mark."; }],
+  [/unfinished long (string|comment)/, function () { return "A `[[` is missing its closing `]]`."; }],
+  [/'then' expected/, function () { return "An `if` or `elseif` condition must be followed by `then`."; }],
+  [/'do' expected/, function () { return "A `for` or `while` line must end with `do`."; }],
+  [/'\)' expected/, function () { return "A `(` is missing its closing `)`."; }],
+  [/'}' expected/, function () { return "A `{` is missing its closing `}`."; }],
+  [/'=' expected/, function () { return "Lua expected an `=` here. Look for a typo, a missing quote mark, or a word Lua doesn't know."; }],
+  [/unexpected symbol/, function () { return "Lua found something it didn't expect here. Look for a missing operator, quote mark, or bracket."; }],
+  [/stack overflow/, function () { return "A function keeps calling itself and never stops."; }],
+  [/cannot resume dead coroutine/, function () { return "The coroutine already finished, so there was nothing left to resume."; }]
+];
+
+function explainError(message) {
+  for (var i = 0; i < FRIENDLY.length; i++) {
+    var m = FRIENDLY[i][0].exec(message);
+    if (m) return FRIENDLY[i][1](m);
+  }
+  return null;
+}
+
+function firstDifference(expected, got) {
+  var e = expected.split("\n"), g = got.split("\n");
+  var n = Math.max(e.length, g.length);
+  for (var i = 0; i < n; i++) if (e[i] !== g[i]) return i;
+  return -1;
+}
+
+/* Returns { status: "pass" | "fail" | "error", output, truncated, error?, message?, expected?, got?, diffLine? } */
+function checkLesson(lesson, code, runner, lex) {
+  var chk = lesson.check || {};
+  var res = runner.run(code, chk.test || null);
+  var out = { output: res.output, truncated: res.truncated };
+
+  if (res.error) {
+    var e = res.error;
+    if (e.kind === "check") {
+      out.status = "fail"; out.message = e.message; return out;
+    }
+    out.status = "error";
+    out.error = {
+      kind: e.kind, line: e.line, message: e.message,
+      friendly: e.kind === "timeout" ? "Look for a loop whose condition never becomes false." : explainError(e.message),
+      duringCheck: e.kind === "checkcrash"
+    };
+    return out;
+  }
+
+  var stripped = lex.stripComments(code);
+  var reqs = chk.requires || [];
+  for (var i = 0; i < reqs.length; i++) {
+    var r = reqs[i];
+    var ok = r.kw ? lex.hasKeyword(code, r.kw) : new RegExp(r.re).test(r.raw ? code : stripped);
+    if (!ok) { out.status = "fail"; out.message = r.msg; return out; }
+  }
+
+  if (typeof chk.output === "string") {
+    var want = normalizeOutput(chk.output), got = normalizeOutput(res.output);
+    if (want !== got) {
+      out.status = "fail"; out.kind = "output";
+      out.expected = want; out.got = got; out.diffLine = firstDifference(want, got);
+      out.message = got === "" ? "Your code didn't print anything yet." : "Your output doesn't match the expected output yet.";
+      return out;
+    }
+  }
+
+  if (chk.cases) {
+    var name = chk.cases.name;
+    var re = new RegExp("(\\blocal\\s+" + name + "\\s*=\\s*)-?\\d+(?:\\.\\d+)?");
+    if (!re.test(code)) {
+      out.status = "fail";
+      out.message = "Keep the line `local " + name + " = ...` with a number, so the checker can try other values.";
+      return out;
+    }
+    for (var c = 0; c < chk.cases.values.length; c++) {
+      var val = chk.cases.values[c][0], expect = chk.cases.values[c][1];
+      var variant = code.replace(re, "$1" + val);
+      var vr = runner.run(variant, null);
+      var vgot = normalizeOutput(vr.output);
+      if (vr.error || vgot !== normalizeOutput(expect)) {
+        out.status = "fail";
+        out.message = "When `" + name + "` is " + val + ", your code printed " +
+          (vr.error ? "an error" : (vgot === "" ? "nothing" : "`" + vgot.replace(/\n/g, " / ") + "`")) +
+          (expect === "" ? ". It shouldn't print anything." : ". It should print `" + expect + "`.");
+        return out;
+      }
+    }
+  }
+
+  out.status = "pass";
+  return out;
+}
+
+if (typeof module !== "undefined") module.exports = { checkLesson: checkLesson, normalizeOutput: normalizeOutput, explainError: explainError };
+
+/* Course content: one small idea per lesson.
+   Body items: string = paragraph, {code}, {what} = "What happens" explanation, {note}, {list}, {steps}, {table}.
+   task: string, or { intro, steps: [...], outro }. */
+var R = String.raw;
+
+var LEVELS = [
+  { n: 1, name: "First steps" },
+  { n: 2, name: "Variables" },
+  { n: 3, name: "More about values" },
+  { n: 4, name: "Making choices" },
+  { n: 5, name: "Loops" },
+  { n: 6, name: "Functions" },
+  { n: 7, name: "Tables" },
+  { n: 8, name: "Advanced Lua" }
+];
+
+var LESSONS = [
+  /* ================= Level 1: First steps ================= */
+  {
+    id: "hello", level: 1, title: "Your first line",
+    body: [
+      "Code is a list of instructions for the computer. You'll write your code in a language called Lua.",
+      "`print` shows something on the screen. Put your text in quotes, inside parentheses:",
+      { code: R`print("Hello!")` },
+      { what: "Press **Run** on the example. `Hello!` shows up below it." },
+      { note: "As you type in the editor, Lua words change color. When you type `(` or `\"`, the editor adds the closing one for you." }
+    ],
+    task: { steps: ["Use `print` to show `Hello, Lua!`", "Press **Run**."] },
+    starter: R`-- Write your code below this line
+`,
+    solution: R`-- Write your code below this line
+print("Hello, Lua!")`,
+    hint: "Type `print(\"Hello, Lua!\")`.",
+    check: { output: "Hello, Lua!" }
+  },
+  {
+    id: "lines", level: 1, title: "More than one line",
+    body: [
+      "You can write as many lines as you want. Lua runs them in order, from top to bottom.",
+      { code: R`print("one")
+print("two")
+print("three")` },
+      { what: "The words show up in the same order as the lines." }
+    ],
+    task: { steps: ["Print `Ready`, then `Set`, then `Go!`. Use one line for each."] },
+    starter: R`
+`,
+    solution: R`print("Ready")
+print("Set")
+print("Go!")`,
+    hint: "Line 1 is `print(\"Ready\")`. Do the same thing for `Set` and `Go!`.",
+    check: { output: "Ready\nSet\nGo!" }
+  },
+  {
+    id: "comments", level: 1, title: "Comments",
+    body: [
+      "Two dashes `--` start a **comment**. Lua skips everything after them on that line.",
+      "Comments are notes for people. They don't change what the code does.",
+      { code: R`-- This is a note. Lua skips it.
+print("This prints")` },
+      "Putting `--` in front of a line is also a quick way to switch that line off.",
+      { code: R`print("On")
+-- print("Off")` },
+      { what: "Only `On` prints. The second line is a comment now." }
+    ],
+    task: {
+      intro: "This code prints two lines.",
+      steps: ["Put `--` at the start of line 2, so only `Keep me` prints."]
+    },
+    starter: R`print("Keep me")
+print("Hide me")
+`,
+    solution: R`print("Keep me")
+-- print("Hide me")
+`,
+    hint: "Tap at the very start of line 2 and type `--`.",
+    check: {
+      output: "Keep me",
+      requires: [{ re: "--", raw: true, msg: "Put `--` in front of line 2 to switch it off." }]
+    }
+  },
+  {
+    id: "numbers", level: 1, title: "Numbers",
+    body: [
+      "Numbers don't need quotes. Without quotes, Lua can do math with them.",
+      { code: R`print(5)
+print(2 + 3)
+print("2 + 3")` },
+      { what: "Line 1 prints 5. Line 2 does the math and prints 5. Line 3 has quotes, so Lua prints it exactly as written: `2 + 3`." }
+    ],
+    task: { steps: ["Print the answer to `12 + 30`. Let Lua do the math."] },
+    starter: R`
+`,
+    solution: R`print(12 + 30)`,
+    hint: "Write `print(12 + 30)`. No quotes, so Lua does the math.",
+    check: {
+      output: "42",
+      requires: [{ re: "12\\s*\\+\\s*30", msg: "Put the math itself, `12 + 30`, inside `print`. Lua will work out the answer." }]
+    }
+  },
+  {
+    id: "math", level: 1, title: "Math",
+    body: [
+      "Here are the math symbols in Lua:",
+      { list: [
+        "`+` adds",
+        "`-` subtracts",
+        "`*` multiplies (it's a star, not an x)",
+        "`/` divides"
+      ] },
+      { code: R`print(10 + 2)  -- 12
+print(10 - 2)  -- 8
+print(10 * 2)  -- 20
+print(10 / 2)  -- 5.0` },
+      "Notice that `/` gives `5.0`, not `5`. In this version of Lua, dividing always gives a decimal number. That's normal."
+    ],
+    task: { steps: ["Print 6 times 7.", "Print 20 divided by 4."] },
+    starter: R`
+`,
+    solution: R`print(6 * 7)
+print(20 / 4)`,
+    hint: "Multiply with a star: `print(6 * 7)`. Divide with a slash: `print(20 / 4)`.",
+    check: {
+      output: "42\n5.0",
+      requires: [
+        { re: "\\*", msg: "Use `*` to multiply." },
+        { re: "/", msg: "Use `/` to divide." }
+      ]
+    }
+  },
+
+  /* ================= Level 2: Variables ================= */
+  {
+    id: "variables", level: 2, title: "Variables",
+    body: [
+      "A **variable** is a name that holds a value. Think of it as a box with a label on it.",
+      "Make one with `local`, then a name, then `=`, then the value:",
+      { code: R`local pet = "cat"
+print(pet)` },
+      { what: "Line 1 puts `\"cat\"` in a box named `pet`. Line 2 prints what's in the box: `cat`." },
+      "Notice that `print(pet)` has no quotes. With quotes, `print(\"pet\")` would just print the word pet."
+    ],
+    task: { steps: ["Make a variable named `fruit` that holds `\"mango\"`.", "Print `fruit`."] },
+    starter: R`
+`,
+    solution: R`local fruit = "mango"
+print(fruit)`,
+    hint: "Line 1 is `local fruit = \"mango\"`. Line 2 is `print(fruit)`, with no quotes around fruit.",
+    check: {
+      output: "mango",
+      requires: [
+        { re: "\\blocal\\s+fruit\\b", msg: "Make the variable with `local fruit = \"mango\"`." },
+        { re: "print\\s*\\(\\s*fruit\\s*\\)", msg: "Print the variable with `print(fruit)`, with no quotes around fruit." }
+      ]
+    }
+  },
+  {
+    id: "number-variables", level: 2, title: "Variables with numbers",
+    body: [
+      "Variables can hold numbers too. Then you can do math with the names.",
+      { code: R`local apples = 3
+local oranges = 4
+print(apples + oranges)  -- 7` },
+      { what: "Lua swaps in the values, so it works out `3 + 4`, which is 7." }
+    ],
+    task: {
+      intro: "`width` and `height` are already made.",
+      steps: ["Print `width` times `height`. Use the names, not the numbers."]
+    },
+    starter: R`local width = 6
+local height = 7
+
+`,
+    solution: R`local width = 6
+local height = 7
+print(width * height)`,
+    hint: "Write `print(width * height)`.",
+    check: {
+      output: "42",
+      requires: [{ re: "width\\s*\\*\\s*height|height\\s*\\*\\s*width", msg: "Multiply the names: `width * height`." }]
+    }
+  },
+  {
+    id: "change", level: 2, title: "Changing a variable",
+    body: [
+      "You can put a new value in a variable. Write its name, `=`, and the new value. Don't write `local` again.",
+      { code: R`local score = 0
+score = 10
+print(score)  -- 10` },
+      "You can also use the old value to make the new one:",
+      { code: R`local coins = 5
+coins = coins + 1
+print(coins)  -- 6` },
+      { what: "Read line 2 from right to left: take `coins` (5), add 1, and put the answer (6) back into `coins`." }
+    ],
+    task: {
+      intro: "`coins` starts at 5.",
+      steps: ["Add 3 to `coins`, like in the example.", "Print `coins`."]
+    },
+    starter: R`local coins = 5
+
+`,
+    solution: R`local coins = 5
+coins = coins + 3
+print(coins)`,
+    hint: "Write `coins = coins + 3`, then `print(coins)`.",
+    check: {
+      output: "8",
+      requires: [{ re: "coins\\s*=\\s*coins\\s*\\+\\s*3", msg: "Change the variable with `coins = coins + 3`." }]
+    }
+  },
+  {
+    id: "join", level: 2, title: "Joining text",
+    body: [
+      "Two dots `..` join pieces of text together.",
+      { code: R`print("sun" .. "flower")  -- sunflower` },
+      "You can join variables too. Put any spaces you need inside the quotes.",
+      { code: R`local name = "Sam"
+print("Hi, " .. name)  -- Hi, Sam` }
+    ],
+    task: {
+      intro: "`name` holds `\"Ana\"`.",
+      steps: ["Print `Hello, Ana!` by joining `\"Hello, \"`, `name`, and `\"!\"` with `..`."]
+    },
+    starter: R`local name = "Ana"
+
+`,
+    solution: R`local name = "Ana"
+print("Hello, " .. name .. "!")`,
+    hint: "Write `print(\"Hello, \" .. name .. \"!\")`.",
+    check: {
+      output: "Hello, Ana!",
+      requires: [{ re: "\\.\\.\\s*name|name\\s*\\.\\.", msg: "Join the variable `name` with `..`, instead of typing Ana yourself." }]
+    }
+  },
+
+  /* ================= Level 3: More about values ================= */
+  {
+    id: "types", level: 3, title: "Kinds of values",
+    body: [
+      "So far you've used text and numbers. Lua calls these different **types**. There are four main ones:",
+      { list: [
+        "**string**: text in quotes, like `\"hi\"`",
+        "**number**: like `42` or `3.5`",
+        "**boolean**: just `true` or `false`",
+        "**nil**: nothing at all"
+      ] },
+      "`type` tells you the type of a value:",
+      { code: R`print(type("hi"))  -- string
+print(type(42))    -- number` }
+    ],
+    task: { steps: ["Print the type of `true`.", "Print the type of `3.5`."] },
+    starter: R`
+`,
+    solution: R`print(type(true))
+print(type(3.5))`,
+    hint: "Write `print(type(true))`. Then do the same with `3.5`.",
+    check: {
+      output: "boolean\nnumber",
+      requires: [{ re: "type\\s*\\(", msg: "Use `type( )` to get each type." }]
+    }
+  },
+  {
+    id: "nil", level: 3, title: "nil means nothing",
+    body: [
+      "`nil` means “no value.” A variable you haven't filled yet holds `nil`.",
+      { code: R`local box
+print(box)  -- nil
+box = "toy"
+print(box)  -- toy` },
+      { what: "At first `box` is empty, so it prints `nil`. After you put `\"toy\"` in it, it prints `toy`." }
+    ],
+    task: {
+      intro: "`prize` has no value yet.",
+      steps: ["Print `prize`.", "Put `\"gold\"` in `prize`.", "Print `prize` again."]
+    },
+    starter: R`local prize
+
+`,
+    solution: R`local prize
+print(prize)
+prize = "gold"
+print(prize)`,
+    hint: "The lines are `print(prize)`, then `prize = \"gold\"`, then `print(prize)` again.",
+    check: { output: "nil\ngold" }
+  },
+  {
+    id: "text-tools", level: 3, title: "Text tools",
+    body: [
+      "Put `#` in front of text to count its letters.",
+      { code: R`print(#"moon")  -- 4` },
+      "`string.upper` makes text all capital letters. `string.lower` makes it all small letters.",
+      { code: R`print(string.upper("hi"))    -- HI
+print(string.lower("LOUD"))  -- loud` }
+    ],
+    task: {
+      intro: "`word` holds `\"lua\"`.",
+      steps: ["Print how many letters are in `word`.", "Print `word` in all capital letters."]
+    },
+    starter: R`local word = "lua"
+
+`,
+    solution: R`local word = "lua"
+print(#word)
+print(string.upper(word))`,
+    hint: "Write `print(#word)`, then `print(string.upper(word))`.",
+    check: {
+      output: "3\nLUA",
+      requires: [
+        { re: "#", msg: "Use `#` to count the letters." },
+        { re: "upper", msg: "Use `string.upper` for the capital letters." }
+      ]
+    }
+  },
+  {
+    id: "tonumber", level: 3, title: "Text that looks like a number",
+    body: [
+      "`\"5\"` with quotes is text. `5` without quotes is a number. They look alike, but Lua treats them differently.",
+      "`tonumber` turns text into a number:",
+      { code: R`local text = "5"
+local n = tonumber(text)
+print(n * 2)  -- 10` },
+      "`tostring` does the opposite. It turns a number into text:",
+      { code: R`print(type(tostring(7)))  -- string` }
+    ],
+    task: {
+      intro: "`answer` holds the text `\"41\"`.",
+      steps: ["Turn it into a number with `tonumber`, and save it in a variable named `n`.", "Print `n + 1`."]
+    },
+    starter: R`local answer = "41"
+
+`,
+    solution: R`local answer = "41"
+local n = tonumber(answer)
+print(n + 1)`,
+    hint: "Write `local n = tonumber(answer)`, then `print(n + 1)`.",
+    check: {
+      output: "42",
+      requires: [{ re: "tonumber\\s*\\(", msg: "Use `tonumber` to turn the text into a number." }]
+    }
+  },
+  {
+    id: "leftovers", level: 3, title: "Leftovers",
+    body: [
+      "Share 7 cookies between 2 friends. Each friend gets 3, and 1 is left over.",
+      "Lua has a symbol for each part:",
+      { list: [
+        "`//` gives the whole part: `7 // 2` is `3`",
+        "`%` gives the leftover: `7 % 2` is `1`"
+      ] },
+      { code: R`print(7 // 2)  -- 3
+print(7 % 2)   -- 1` }
+    ],
+    task: {
+      intro: "There are 10 slices of pizza and 3 friends.",
+      steps: ["Print how many whole slices each friend gets. Use `//`.", "Print how many slices are left over. Use `%`."]
+    },
+    starter: R`local slices = 10
+local friends = 3
+
+`,
+    solution: R`local slices = 10
+local friends = 3
+print(slices // friends)
+print(slices % friends)`,
+    hint: "Write `print(slices // friends)`. Then do the same with `%`.",
+    check: {
+      output: "3\n1",
+      requires: [
+        { re: "//", msg: "Use `//` for the whole slices." },
+        { re: "%", msg: "Use `%` for the leftover slices." }
+      ]
+    }
+  },
+
+  /* ================= Level 4: Making choices ================= */
+  {
+    id: "compare", level: 4, title: "Yes-or-no questions",
+    body: [
+      "You can ask Lua yes-or-no questions. It answers `true` for yes or `false` for no.",
+      { list: [
+        "`>` bigger than",
+        "`<` smaller than",
+        "`==` equal to (two equal signs)",
+        "`~=` not equal to"
+      ] },
+      { code: R`print(5 > 3)   -- true
+print(5 < 3)   -- false
+print(5 == 5)  -- true
+print(5 ~= 5)  -- false` },
+      { note: "One `=` puts a value in a variable. Two `==` asks if two things are equal." }
+    ],
+    task: {
+      intro: "`age` is 12.",
+      steps: ["Print whether `age` is bigger than 10.", "Print whether `age` equals 20."]
+    },
+    starter: R`local age = 12
+
+`,
+    solution: R`local age = 12
+print(age > 10)
+print(age == 20)`,
+    hint: "Write `print(age > 10)`, then `print(age == 20)`.",
+    check: {
+      output: "true\nfalse",
+      requires: [{ re: "==", msg: "Use `==` to ask if `age` equals 20." }]
+    }
+  },
+  {
+    id: "if", level: 4, title: "if",
+    body: [
+      "`if` runs code only when the answer to a question is yes.",
+      { code: R`local hp = 0
+if hp == 0 then
+  print("Game over")
+end` },
+      { what: "`hp == 0` is true, so `Game over` prints. If `hp` were 5, nothing would print." },
+      "The pattern is always: `if`, a question, `then`, your code, `end`.",
+      { note: "When you press Enter after `then`, the editor adds the `end` for you." }
+    ],
+    task: {
+      intro: "`lives` is 0.",
+      steps: ["Write an `if` that checks whether `lives` equals 0.", "Inside it, print `Game over`."],
+      outro: "The checker will also try other numbers for `lives`."
+    },
+    starter: R`local lives = 0
+
+`,
+    solution: R`local lives = 0
+if lives == 0 then
+  print("Game over")
+end`,
+    hint: "Type `if lives == 0 then` and press Enter. Then type `print(\"Game over\")`.",
+    check: {
+      output: "Game over",
+      requires: [{ kw: "if", msg: "Use an `if` to check `lives`." }],
+      cases: { name: "lives", values: [["0", "Game over"], ["3", ""]] }
+    }
+  },
+  {
+    id: "else", level: 4, title: "else",
+    body: [
+      "`else` is the other choice. It runs when the answer is no.",
+      { code: R`local coins = 3
+if coins >= 5 then
+  print("You can buy it")
+else
+  print("Not enough coins")
+end` },
+      { what: "3 is not 5 or more, so the `else` part runs." },
+      "`>=` means “bigger than or equal to.” `<=` means “smaller than or equal to.”"
+    ],
+    task: {
+      intro: "`score` is 40.",
+      steps: ["If `score` is 50 or more, print `You win`.", "Otherwise, use `else` to print `Try again`."],
+      outro: "The checker will also try other scores."
+    },
+    starter: R`local score = 40
+
+`,
+    solution: R`local score = 40
+if score >= 50 then
+  print("You win")
+else
+  print("Try again")
+end`,
+    hint: "Start with `if score >= 50 then`. Put `else` on its own line before the second `print`.",
+    check: {
+      output: "Try again",
+      requires: [{ kw: "else", msg: "Use `else` for the second choice." }],
+      cases: { name: "score", values: [["50", "You win"], ["90", "You win"], ["10", "Try again"]] }
+    }
+  },
+  {
+    id: "elseif", level: 4, title: "elseif",
+    body: [
+      "`elseif` adds more choices. Lua checks each question from top to bottom, and runs only the first one that's true.",
+      { code: R`local score = 85
+if score >= 90 then
+  print("A")
+elseif score >= 80 then
+  print("B")
+else
+  print("C")
+end` },
+      { what: "85 is not 90 or more. It is 80 or more, so Lua prints `B` and skips the rest." }
+    ],
+    task: {
+      intro: "`temp` is a temperature.",
+      steps: ["If `temp` is more than 85, print `hot`.", "Otherwise, if it's 60 or more, print `nice`.", "Otherwise, print `cold`."],
+      outro: "The checker will also try other temperatures."
+    },
+    starter: R`local temp = 72
+
+`,
+    solution: R`local temp = 72
+if temp > 85 then
+  print("hot")
+elseif temp >= 60 then
+  print("nice")
+else
+  print("cold")
+end`,
+    hint: "Copy the shape of the example. Use `temp > 85` for the first question and `temp >= 60` for the second.",
+    check: {
+      output: "nice",
+      requires: [
+        { kw: "elseif", msg: "Use `elseif` for the middle choice." },
+        { kw: "else", msg: "Use `else` for the last choice." }
+      ],
+      cases: { name: "temp", values: [["90", "hot"], ["60", "nice"], ["40", "cold"], ["85", "nice"]] }
+    }
+  },
+  {
+    id: "and-or-not", level: 4, title: "and, or, not",
+    body: [
+      "You can join two questions together:",
+      { list: [
+        "`and`: yes only if both are yes",
+        "`or`: yes if at least one is yes",
+        "`not`: flips the answer, so yes becomes no"
+      ] },
+      { code: R`local hasKey = true
+local doorLocked = true
+if hasKey and doorLocked then
+  print("Unlock the door")
+end` },
+      { what: "Both are true, so the message prints." }
+    ],
+    task: {
+      intro: "`raining` is true, and `hasUmbrella` is false.",
+      steps: ["If it's raining **and** you do **not** have an umbrella, print `You'll get wet`."]
+    },
+    starter: R`local raining = true
+local hasUmbrella = false
+
+`,
+    solution: R`local raining = true
+local hasUmbrella = false
+if raining and not hasUmbrella then
+  print("You'll get wet")
+end`,
+    hint: "The question is `raining and not hasUmbrella`. Put it between `if` and `then`.",
+    check: {
+      output: "You'll get wet",
+      requires: [
+        { kw: "and", msg: "Use `and` to join the two questions." },
+        { kw: "not", msg: "Use `not` in front of `hasUmbrella`." }
+      ]
+    }
+  },
+  {
+    id: "or-backup", level: 4, title: "Backup values",
+    body: [
+      "In Lua, only `false` and `nil` count as “no.” Everything else counts as “yes,” even `0`.",
+      "That makes `or` handy for backup values. `a or b` means: use `a`, but if `a` is nil, use `b`.",
+      { code: R`local nickname = nil
+print(nickname or "Guest")  -- Guest` },
+      { what: "`nickname` is nil, so Lua uses the backup: `Guest`." }
+    ],
+    task: {
+      intro: "`volume` is nil.",
+      steps: ["Print `volume`, with `50` as the backup. Use `or`."]
+    },
+    starter: R`local volume = nil
+
+`,
+    solution: R`local volume = nil
+print(volume or 50)`,
+    hint: "Write `print(volume or 50)`.",
+    check: {
+      output: "50",
+      requires: [{ kw: "or", msg: "Use `or` to give a backup value." }]
+    }
+  },
+
+  /* ================= Level 5: Loops ================= */
+  {
+    id: "for", level: 5, title: "Counting with for",
+    body: [
+      "A **loop** repeats code. A `for` loop counts for you.",
+      { code: R`for i = 1, 3 do
+  print(i)
+end` },
+      { what: "`i` starts at 1 and goes up to 3. Each time, the code inside runs. So it prints 1, 2, 3." },
+      { note: "Press Enter after `do` and the editor adds the `end` for you." }
+    ],
+    task: { steps: ["Use a `for` loop to print the numbers 1 to 10."] },
+    starter: R`
+`,
+    solution: R`for i = 1, 10 do
+  print(i)
+end`,
+    hint: "Type `for i = 1, 10 do` and press Enter. Then type `print(i)`.",
+    check: {
+      output: "1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
+      requires: [{ kw: "for", msg: "Use a `for` loop." }]
+    }
+  },
+  {
+    id: "for-step", level: 5, title: "Counting by more than one",
+    body: [
+      "Add a third number to count by something other than 1. This number is called the **step**.",
+      { code: R`for i = 0, 20, 5 do
+  print(i)
+end` },
+      { what: "It counts by 5: 0, 5, 10, 15, 20." },
+      "A negative step counts down:",
+      { code: R`for i = 3, 1, -1 do
+  print(i)
+end` }
+    ],
+    task: { steps: ["Count down from 5 to 1 with a `for` loop.", "After the loop's `end`, print `Go!`."] },
+    starter: R`
+`,
+    solution: R`for i = 5, 1, -1 do
+  print(i)
+end
+print("Go!")`,
+    hint: "Start with `for i = 5, 1, -1 do`. Put `print(\"Go!\")` after the `end`.",
+    check: {
+      output: "5\n4\n3\n2\n1\nGo!",
+      requires: [{ re: "\\bfor\\s+[A-Za-z_]\\w*\\s*=[^,\\n]+,[^,\\n]+,[^\\n]+\\bdo\\b", msg: "Use a `for` loop with a step of -1: `for i = 5, 1, -1 do`." }]
+    }
+  },
+  {
+    id: "total", level: 5, title: "Adding things up",
+    body: [
+      "Here's a useful trick: make a variable that starts at 0. Then add to it each time the loop runs.",
+      { code: R`local total = 0
+for i = 1, 3 do
+  total = total + i
+end
+print(total)  -- 6` },
+      { what: "Round 1 adds 1, so total is 1. Round 2 adds 2, so total is 3. Round 3 adds 3, so total is 6." }
+    ],
+    task: {
+      intro: "`total` starts at 0.",
+      steps: ["Use a `for` loop to add up all the numbers from 1 to 10.", "After the loop, print `total`."]
+    },
+    starter: R`local total = 0
+
+`,
+    solution: R`local total = 0
+for i = 1, 10 do
+  total = total + i
+end
+print(total)`,
+    hint: "Copy the example, but change the 3 to 10.",
+    check: {
+      output: "55",
+      requires: [{ kw: "for", msg: "Use a `for` loop to add the numbers." }]
+    }
+  },
+  {
+    id: "while", level: 5, title: "while loops",
+    body: [
+      "A `while` loop repeats as long as a question is true.",
+      { code: R`local n = 1
+while n <= 3 do
+  print(n)
+  n = n + 1
+end` },
+      { what: "Each time, Lua asks: is `n <= 3`? When `n` gets to 4, the answer is no, so the loop stops." },
+      { note: "Something inside the loop has to change. If the answer never becomes no, the loop never stops. This page will stop it for you." }
+    ],
+    task: {
+      intro: "`n` starts at 1.",
+      steps: ["Write a `while` loop that runs while `n` is smaller than 100.", "Inside it, print `n`, then double it with `n = n * 2`."]
+    },
+    starter: R`local n = 1
+
+`,
+    solution: R`local n = 1
+while n < 100 do
+  print(n)
+  n = n * 2
+end`,
+    hint: "Start with `while n < 100 do`. Inside, write `print(n)` and then `n = n * 2`.",
+    check: {
+      output: "1\n2\n4\n8\n16\n32\n64",
+      requires: [{ kw: "while", msg: "Use a `while` loop." }]
+    }
+  },
+  {
+    id: "break", level: 5, title: "Stopping early",
+    body: [
+      "`break` stops a loop right away, even if it isn't done.",
+      { code: R`for i = 1, 10 do
+  if i == 4 then
+    break
+  end
+  print(i)
+end` },
+      { what: "It prints 1, 2, 3. When `i` is 4, `break` stops the loop." }
+    ],
+    task: {
+      intro: "This loop prints the numbers 1 to 100.",
+      steps: ["Add a `break` so the loop stops after it prints 5."]
+    },
+    starter: R`for i = 1, 100 do
+  print(i)
+end
+`,
+    solution: R`for i = 1, 100 do
+  print(i)
+  if i == 5 then
+    break
+  end
+end
+`,
+    hint: "Under `print(i)`, add `if i == 5 then break end`.",
+    check: {
+      output: "1\n2\n3\n4\n5",
+      requires: [{ kw: "break", msg: "Use `break` to stop the loop." }]
+    }
+  },
+  {
+    id: "fizzbuzz", level: 5, title: "Checkpoint: FizzBuzz",
+    body: [
+      "Time to mix loops and `if`. FizzBuzz is a famous practice puzzle. Here are the rules:",
+      { list: [
+        "Count from 1 to 15.",
+        "If the number divides evenly by 3, print `Fizz` instead.",
+        "If it divides evenly by 5, print `Buzz` instead.",
+        "If it divides evenly by both, print `FizzBuzz` instead.",
+        "Otherwise, print the number."
+      ] },
+      "A number divides evenly by 3 when there's no leftover: `n % 3 == 0`.",
+      { code: R`print(9 % 3 == 0)   -- true
+print(10 % 3 == 0)  -- false` },
+      { note: "Check for `FizzBuzz` first, using `n % 15 == 0`. If you check for 3 first, 15 will print `Fizz` instead." }
+    ],
+    task: {
+      intro: "The loop is already there. Fill in the inside:",
+      steps: [
+        "If `n % 15 == 0`, print `FizzBuzz`.",
+        "Otherwise, if `n % 3 == 0`, print `Fizz`.",
+        "Otherwise, if `n % 5 == 0`, print `Buzz`.",
+        "Otherwise, print `n`."
+      ]
+    },
+    starter: R`for n = 1, 15 do
+
+end
+`,
+    solution: R`for n = 1, 15 do
+  if n % 15 == 0 then
+    print("FizzBuzz")
+  elseif n % 3 == 0 then
+    print("Fizz")
+  elseif n % 5 == 0 then
+    print("Buzz")
+  else
+    print(n)
+  end
+end
+`,
+    hint: "It's one `if` with two `elseif`s and an `else`, like the `elseif` lesson.",
+    check: {
+      output: "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz",
+      requires: [{ kw: "for", msg: "Keep the loop from 1 to 15." }]
+    }
+  },
+
+  /* ================= Level 6: Functions ================= */
+  {
+    id: "functions", level: 6, title: "Functions",
+    body: [
+      "A **function** is a name for a group of instructions. Write it once, then use it as many times as you want.",
+      { code: R`function sayHi()
+  print("Hi!")
+end
+
+sayHi()
+sayHi()` },
+      { what: "The first 3 lines make the function. Nothing prints yet. Each `sayHi()` runs it, so `Hi!` prints twice." },
+      "Using a function is called **calling** it. You call it with its name and `()`."
+    ],
+    task: { steps: ["Make a function named `cheer` that prints `Go team!`.", "Call it two times."] },
+    starter: R`
+`,
+    solution: R`function cheer()
+  print("Go team!")
+end
+
+cheer()
+cheer()`,
+    hint: "Copy the example. Change `sayHi` to `cheer`, and change the text to `Go team!`.",
+    check: {
+      output: "Go team!\nGo team!",
+      requires: [{ re: "function\\s+cheer\\b", msg: "Make the function with `function cheer()`." }]
+    }
+  },
+  {
+    id: "parameters", level: 6, title: "Giving a function information",
+    body: [
+      "You can hand a function some information. Put a name for it inside the `()`. That name is called a **parameter**.",
+      { code: R`function greet(name)
+  print("Hello, " .. name)
+end
+
+greet("Lin")
+greet("Sol")` },
+      { what: "When you call `greet(\"Lin\")`, `name` holds `\"Lin\"`. The next time, it holds `\"Sol\"`." }
+    ],
+    task: {
+      intro: "The two calls are already written at the bottom.",
+      steps: ["Fill in `shout` so it prints `word` in capital letters. Use `string.upper`."]
+    },
+    starter: R`function shout(word)
+
+end
+
+shout("hey")
+shout("lua")
+`,
+    solution: R`function shout(word)
+  print(string.upper(word))
+end
+
+shout("hey")
+shout("lua")
+`,
+    hint: "Inside the function, write `print(string.upper(word))`.",
+    check: { output: "HEY\nLUA" }
+  },
+  {
+    id: "return", level: 6, title: "Getting an answer back",
+    body: [
+      "`return` sends an answer back from a function. Then you can save the answer or print it.",
+      { code: R`function double(x)
+  return x * 2
+end
+
+local result = double(21)
+print(result)  -- 42` },
+      { what: "`double(21)` gives back 42, and 42 gets saved in `result`." },
+      { note: "`print` only shows a value. `return` hands it back, so the rest of your code can use it." }
+    ],
+    task: {
+      steps: ["Fill in `area` so it **returns** `width * height`."],
+      outro: "The checker will try `area` with a few different numbers."
+    },
+    starter: R`function area(width, height)
+
+end
+
+print(area(3, 4))  -- should print 12
+`,
+    solution: R`function area(width, height)
+  return width * height
+end
+
+print(area(3, 4))  -- should print 12
+`,
+    hint: "Inside the function, write `return width * height`.",
+    check: {
+      test: R`expect(type(area) == "function", "Keep the function named area.")
+local got = area(3, 4)
+expect(got ~= nil, "area(3, 4) gave back nil. Did you use return?")
+expect(got == 12, "area(3, 4) should give back 12, but it gave back " .. tostring(got) .. ".")
+expect(area(5, 5) == 25, "area(5, 5) should give back 25.")
+expect(area(10, 0) == 0, "area(10, 0) should give back 0.")`
+    }
+  },
+  {
+    id: "two-answers", level: 6, title: "Two answers at once",
+    body: [
+      "A function can return two answers. Put a comma between them.",
+      { code: R`local function split(n)
+  return n // 2, n % 2
+end
+
+local half, extra = split(7)
+print(half)   -- 3
+print(extra)  -- 1` },
+      { what: "The first answer goes in `half`. The second goes in `extra`." },
+      "`local function` works just like `function`. Most Lua code makes functions this way."
+    ],
+    task: {
+      intro: "`minmax` gets three numbers.",
+      steps: ["Make it return two answers: the smallest number, then the biggest.", "Use `math.min(a, b, c)` and `math.max(a, b, c)`."]
+    },
+    starter: R`local function minmax(a, b, c)
+
+end
+
+print(minmax(4, 9, 1))  -- should print 1 and 9
+`,
+    solution: R`local function minmax(a, b, c)
+  return math.min(a, b, c), math.max(a, b, c)
+end
+
+print(minmax(4, 9, 1))  -- should print 1 and 9
+`,
+    hint: "Write `return math.min(a, b, c), math.max(a, b, c)`.",
+    check: {
+      test: R`expect(type(minmax) == "function", "Keep the function named minmax.")
+local lo, hi = minmax(4, 9, 1)
+expect(lo == 1 and hi == 9, "minmax(4, 9, 1) should give back 1 and 9, but gave " .. tostring(lo) .. " and " .. tostring(hi) .. ".")
+lo, hi = minmax(-2, -8, 0)
+expect(lo == -8 and hi == 0, "minmax(-2, -8, 0) should give back -8 and 0.")`
+    }
+  },
+
+  /* ================= Level 7: Tables ================= */
+  {
+    id: "lists", level: 7, title: "Lists",
+    body: [
+      "A **table** can hold a list of values. Put them inside curly braces `{ }`, with commas between.",
+      { code: R`local pets = {"cat", "dog", "fish"}
+print(pets[1])  -- cat
+print(pets[3])  -- fish` },
+      "`pets[1]` means item number 1. In Lua, lists start counting at 1.",
+      "`#` counts the items in a list:",
+      { code: R`local pets = {"cat", "dog", "fish"}
+print(#pets)  -- 3` }
+    ],
+    task: {
+      intro: "`colors` is a list.",
+      steps: ["Print item number 2.", "Print how many items there are."]
+    },
+    starter: R`local colors = {"red", "green", "blue", "gold"}
+
+`,
+    solution: R`local colors = {"red", "green", "blue", "gold"}
+print(colors[2])
+print(#colors)`,
+    hint: "Write `print(colors[2])`, then `print(#colors)`.",
+    check: {
+      output: "green\n4",
+      requires: [
+        { re: "colors\\s*\\[\\s*2\\s*\\]", msg: "Get item 2 with `colors[2]`." },
+        { re: "#", msg: "Use `#` to count the items." }
+      ]
+    }
+  },
+  {
+    id: "list-add", level: 7, title: "Adding to a list",
+    body: [
+      "`table.insert` adds an item to the end of a list.",
+      { code: R`local bag = {"apple"}
+table.insert(bag, "bread")
+print(#bag)    -- 2
+print(bag[2])  -- bread` },
+      "`table.remove` takes the last item off.",
+      { code: R`local bag = {"apple", "bread"}
+table.remove(bag)
+print(#bag)  -- 1` }
+    ],
+    task: {
+      intro: "`pets` has 3 items.",
+      steps: ["Add `\"bird\"` to the end with `table.insert`.", "Print how many items `pets` has now.", "Print item number 4."]
+    },
+    starter: R`local pets = {"cat", "dog", "fish"}
+
+`,
+    solution: R`local pets = {"cat", "dog", "fish"}
+table.insert(pets, "bird")
+print(#pets)
+print(pets[4])`,
+    hint: "Write `table.insert(pets, \"bird\")`. Then `print(#pets)` and `print(pets[4])`.",
+    check: {
+      output: "4\nbird",
+      requires: [{ re: "table\\.insert", msg: "Use `table.insert` to add the bird." }]
+    }
+  },
+  {
+    id: "ipairs", level: 7, title: "Looping through a list",
+    body: [
+      "`ipairs` lets a `for` loop visit every item in a list, in order.",
+      { code: R`local fruits = {"apple", "kiwi", "plum"}
+for i, fruit in ipairs(fruits) do
+  print(i, fruit)
+end` },
+      { what: "Each time around, `i` is the item's number and `fruit` is the item. The loop runs once for each item." }
+    ],
+    task: {
+      intro: "`pets` is a list.",
+      steps: ["Use `for` and `ipairs` to print each pet, one per line."]
+    },
+    starter: R`local pets = {"cat", "dog", "fish"}
+
+`,
+    solution: R`local pets = {"cat", "dog", "fish"}
+for i, pet in ipairs(pets) do
+  print(pet)
+end`,
+    hint: "Write `for i, pet in ipairs(pets) do`, then `print(pet)` inside.",
+    check: {
+      output: "cat\ndog\nfish",
+      requires: [{ re: "ipairs", msg: "Use `ipairs` to go through the list." }]
+    }
+  },
+  {
+    id: "sum-list", level: 7, title: "Adding up a list",
+    body: [
+      "Now mix two things you know: a loop with `ipairs`, and a total that starts at 0.",
+      { code: R`local prices = {2, 5, 3}
+local total = 0
+for i, price in ipairs(prices) do
+  total = total + price
+end
+print(total)  -- 10` }
+    ],
+    task: {
+      intro: "`scores` is a list of numbers.",
+      steps: ["Add up all the scores, like the example.", "Print the total."]
+    },
+    starter: R`local scores = {12, 7, 30, 5}
+
+`,
+    solution: R`local scores = {12, 7, 30, 5}
+local total = 0
+for i, score in ipairs(scores) do
+  total = total + score
+end
+print(total)`,
+    hint: "Copy the example and change `prices` to `scores`.",
+    check: {
+      output: "54",
+      requires: [{ re: "ipairs", msg: "Use `ipairs` to go through the list." }]
+    }
+  },
+  {
+    id: "keys", level: 7, title: "Tables with names",
+    body: [
+      "A table can also store values under names. The names are called **keys**. This is great for describing one thing, like a game character.",
+      { code: R`local hero = { name = "Rex", hp = 100 }
+print(hero.name)  -- Rex
+print(hero.hp)    -- 100` },
+      "Change a value with `=`, just like a variable. You can add new keys the same way.",
+      { code: R`local hero = { name = "Rex", hp = 100 }
+hero.hp = hero.hp - 30
+hero.level = 2
+print(hero.hp)     -- 70
+print(hero.level)  -- 2` }
+    ],
+    task: {
+      intro: "`hero` has a `name` and `hp`.",
+      steps: ["Make `hero.hp` 25 smaller.", "Add a key named `level`, set to 2.", "Print `hero.hp`, then `hero.level`."]
+    },
+    starter: R`local hero = { name = "Rex", hp = 100 }
+
+`,
+    solution: R`local hero = { name = "Rex", hp = 100 }
+hero.hp = hero.hp - 25
+hero.level = 2
+print(hero.hp)
+print(hero.level)`,
+    hint: "Write `hero.hp = hero.hp - 25` and `hero.level = 2`. Then print both.",
+    check: {
+      output: "75\n2",
+      test: R`expect(hero.hp == 75, "hero.hp should be 75.")
+expect(hero.level == 2, "hero.level should be 2.")`
+    }
+  },
+  {
+    id: "pairs", level: 7, title: "Looping through names",
+    body: [
+      "`pairs` lets a loop visit every key in a table. Each time, you get the key and its value.",
+      { code: R`local stock = { apples = 3, pears = 5 }
+for fruit, count in pairs(stock) do
+  print(fruit, count)
+end` },
+      { note: "`pairs` can give the keys in any order. That's normal." }
+    ],
+    task: {
+      intro: "`prices` has three items, and `total` starts at 0.",
+      steps: ["Use `pairs` to add up all the prices.", "Print the total."]
+    },
+    starter: R`local prices = { apple = 3, bread = 5, milk = 2 }
+local total = 0
+
+`,
+    solution: R`local prices = { apple = 3, bread = 5, milk = 2 }
+local total = 0
+for item, price in pairs(prices) do
+  total = total + price
+end
+print(total)`,
+    hint: "Write `for item, price in pairs(prices) do`, then `total = total + price` inside.",
+    check: {
+      output: "10",
+      requires: [{ re: "\\bpairs\\s*\\(", msg: "Use `pairs` to go through the table." }]
+    }
+  },
+  {
+    id: "colon", level: 7, title: "Text shortcuts with :",
+    body: [
+      "There's a shorter way to use text tools. Write the text, then `:`, then the tool.",
+      { code: R`local word = "moon"
+print(word:upper())         -- MOON
+print(string.upper(word))   -- MOON, the long way` },
+      "`sub` cuts out part of the text. `word:sub(1, 3)` gives letters 1 through 3.",
+      { code: R`local word = "sunflower"
+print(word:sub(1, 3))  -- sun` }
+    ],
+    task: {
+      intro: "`word` holds `\"moonlight\"`.",
+      steps: ["Print `word` in capital letters, using `word:upper()`.", "Print just `moon`, using `word:sub(1, 4)`."]
+    },
+    starter: R`local word = "moonlight"
+
+`,
+    solution: R`local word = "moonlight"
+print(word:upper())
+print(word:sub(1, 4))`,
+    hint: "Write `print(word:upper())`, then `print(word:sub(1, 4))`.",
+    check: {
+      output: "MOONLIGHT\nmoon",
+      requires: [
+        { re: ":\\s*upper", msg: "Use `word:upper()`, with a colon." },
+        { re: ":\\s*sub", msg: "Use `word:sub(1, 4)`, with a colon." }
+      ]
+    }
+  },
+  {
+    id: "format", level: 7, title: "Fill-in-the-blank text",
+    body: [
+      "`string.format` builds text that has blanks in it. Lua fills each blank with a value, in order.",
+      { list: [
+        "`%s` is a blank for text",
+        "`%d` is a blank for a whole number"
+      ] },
+      { code: R`print(string.format("%s has %d coins", "Ana", 12))` },
+      { what: "`%s` gets filled with `Ana`, and `%d` gets filled with `12`. It prints `Ana has 12 coins`." }
+    ],
+    task: {
+      intro: "`name` and `score` are already made.",
+      steps: ["Use `string.format` to print `Kai scored 30 points`."]
+    },
+    starter: R`local name = "Kai"
+local score = 30
+
+`,
+    solution: R`local name = "Kai"
+local score = 30
+print(string.format("%s scored %d points", name, score))`,
+    hint: "The blanks go in the text: `\"%s scored %d points\"`. After it, add `, name, score`.",
+    check: {
+      output: "Kai scored 30 points",
+      requires: [{ re: "format", msg: "Use `string.format` to build the text." }]
+    }
+  },
+
+  /* ================= Level 8: Advanced Lua ================= */
+  {
+    id: "function-values", level: 8, title: "Functions in variables",
+    body: [
+      "A function is a value, like a number. You can store it in a variable, or hand it to another function.",
+      { code: R`local function twice(f)
+  f()
+  f()
+end
+
+twice(function()
+  print("hey")
+end)` },
+      { what: "`twice` gets a function, names it `f`, and runs it two times. So `hey` prints twice." }
+    ],
+    task: {
+      intro: "`repeatTimes(n, f)` should run the function `f`, `n` times.",
+      steps: ["Inside `repeatTimes`, write a `for` loop from 1 to `n`.", "Inside the loop, call `f()`."]
+    },
+    starter: R`local function repeatTimes(n, f)
+
+end
+
+repeatTimes(3, function()
+  print("beep")
+end)
+`,
+    solution: R`local function repeatTimes(n, f)
+  for i = 1, n do
+    f()
+  end
+end
+
+repeatTimes(3, function()
+  print("beep")
+end)
+`,
+    hint: "Inside `repeatTimes`, write `for i = 1, n do`, then `f()`.",
+    check: {
+      output: "beep\nbeep\nbeep",
+      test: R`local count = 0
+repeatTimes(5, function() count = count + 1 end)
+expect(count == 5, "repeatTimes(5, f) should run f 5 times, but it ran " .. count .. " times.")`
+    }
+  },
+  {
+    id: "closures", level: 8, title: "Functions that remember",
+    body: [
+      "A function can make a new function and give it back. The new function remembers the variables around it.",
+      { code: R`local function makeCounter()
+  local count = 0
+  return function()
+    count = count + 1
+    return count
+  end
+end
+
+local tick = makeCounter()
+print(tick())  -- 1
+print(tick())  -- 2
+print(tick())  -- 3` },
+      { what: "`tick` remembers its own `count`. Each time you call `tick()`, it adds 1 and gives back the new number." }
+    ],
+    task: {
+      intro: "`makeMultiplier(n)` should give back a new function.",
+      steps: ["Inside `makeMultiplier`, return a function that takes `x`.", "That inner function should return `x * n`."],
+      outro: "So `makeMultiplier(3)` makes a function that multiplies by 3."
+    },
+    starter: R`local function makeMultiplier(n)
+
+end
+
+local triple = makeMultiplier(3)
+print(triple(5))  -- should print 15
+`,
+    solution: R`local function makeMultiplier(n)
+  return function(x)
+    return x * n
+  end
+end
+
+local triple = makeMultiplier(3)
+print(triple(5))  -- should print 15
+`,
+    hint: "Write `return function(x)`, then `return x * n`, then `end`.",
+    check: {
+      test: R`expect(type(makeMultiplier) == "function", "Keep the function named makeMultiplier.")
+local t = makeMultiplier(3)
+expect(type(t) == "function", "makeMultiplier(3) should give back a function, but it gave back a " .. type(t) .. ".")
+expect(t(5) == 15, "makeMultiplier(3) should make a function that turns 5 into 15.")
+expect(makeMultiplier(10)(4) == 40, "makeMultiplier(10) should make a function that turns 4 into 40.")`
+    }
+  },
+  {
+    id: "methods", level: 8, title: "Methods and self",
+    body: [
+      "A table can hold functions too. A function that belongs to a table is called a **method**.",
+      "Make a method with a colon `:`. Inside it, `self` means “the table this method belongs to.”",
+      { code: R`local dog = { name = "Biscuit", tricks = 0 }
+
+function dog:learn()
+  self.tricks = self.tricks + 1
+end
+
+dog:learn()
+dog:learn()
+print(dog.tricks)  -- 2` },
+      { what: "`dog:learn()` runs `learn` with `self` set to `dog`. So `self.tricks` is really `dog.tricks`." },
+      { note: "Call methods with a colon too: `dog:learn()`. With a dot, `self` would be nil." }
+    ],
+    task: {
+      intro: "`account` holds a `balance` of money.",
+      steps: ["In `deposit`, add `amount` to `self.balance`.", "In `withdraw`, take `amount` away from `self.balance`, but only if `amount` is not more than the balance."]
+    },
+    starter: R`local account = { balance = 0 }
+
+function account:deposit(amount)
+
+end
+
+function account:withdraw(amount)
+
+end
+
+account:deposit(50)
+account:withdraw(20)
+account:withdraw(100)
+print(account.balance)  -- should print 30
+`,
+    solution: R`local account = { balance = 0 }
+
+function account:deposit(amount)
+  self.balance = self.balance + amount
+end
+
+function account:withdraw(amount)
+  if amount <= self.balance then
+    self.balance = self.balance - amount
+  end
+end
+
+account:deposit(50)
+account:withdraw(20)
+account:withdraw(100)
+print(account.balance)  -- should print 30
+`,
+    hint: "`deposit` is one line: `self.balance = self.balance + amount`. In `withdraw`, wrap the subtraction in `if amount <= self.balance then ... end`.",
+    check: {
+      test: R`expect(type(account.deposit) == "function" and type(account.withdraw) == "function", "account needs a deposit method and a withdraw method.")
+account.balance = 0
+account:deposit(50)
+expect(account.balance == 50, "After deposit(50), balance should be 50, not " .. tostring(account.balance) .. ".")
+account:withdraw(20)
+expect(account.balance == 30, "After withdraw(20), balance should be 30.")
+account:withdraw(100)
+expect(account.balance == 30, "withdraw(100) with only 30 shouldn't change the balance.")`
+    }
+  },
+  {
+    id: "metatables", level: 8, title: "Borrowing missing values",
+    body: [
+      "A **metatable** is a helper table attached to another table. You attach it with `setmetatable`.",
+      "If the helper has an `__index` key, it means: “if a key is missing here, look over there.”",
+      { code: R`local defaults = { color = "gray", size = 1 }
+local box = { size = 5 }
+setmetatable(box, { __index = defaults })
+
+print(box.size)   -- 5
+print(box.color)  -- gray` },
+      { what: "`box` has its own `size`, so it uses 5. It has no `color`, so Lua looks in `defaults` and finds `gray`." }
+    ],
+    task: {
+      intro: "`car` has a color but no speed.",
+      steps: ["Use `setmetatable` so `car` borrows missing values from `defaults`."]
+    },
+    starter: R`local defaults = { color = "gray", speed = 1 }
+local car = { color = "red" }
+
+-- attach defaults to car here
+
+print(car.color)  -- should print red
+print(car.speed)  -- should print 1
+`,
+    solution: R`local defaults = { color = "gray", speed = 1 }
+local car = { color = "red" }
+
+setmetatable(car, { __index = defaults })
+
+print(car.color)  -- should print red
+print(car.speed)  -- should print 1
+`,
+    hint: "Copy line 3 of the example, but use `car` instead of `box`.",
+    check: {
+      output: "red\n1",
+      requires: [{ re: "setmetatable", msg: "Use `setmetatable` to attach `defaults`." }]
+    }
+  },
+  {
+    id: "classes", level: 8, title: "Making many of the same thing",
+    body: [
+      "A **class** is a pattern for making many tables that work the same way, like many cats in a game.",
+      "Here's the usual Lua pattern. `Cat` holds the methods. `Cat.new` makes a new cat that borrows those methods.",
+      { code: R`local Cat = {}
+Cat.__index = Cat
+
+function Cat.new(name)
+  local self = setmetatable({}, Cat)
+  self.name = name
+  self.lives = 9
+  return self
+end
+
+function Cat:loseLife()
+  self.lives = self.lives - 1
+end
+
+local tom = Cat.new("Tom")
+tom:loseLife()
+print(tom.lives)  -- 8` },
+      { what: "`tom` doesn't have `loseLife` itself, so it borrows it from `Cat`. Each cat keeps its own name and lives." }
+    ],
+    task: {
+      intro: "Finish the `Rectangle` class. Use `Cat` as a guide.",
+      steps: [
+        "In `Rectangle.new`, make `self` with `setmetatable({}, Rectangle)`, save `w` and `h` on it, and return it.",
+        "Add a method `Rectangle:area()` that returns `self.w * self.h`."
+      ]
+    },
+    starter: R`local Rectangle = {}
+Rectangle.__index = Rectangle
+
+function Rectangle.new(w, h)
+
+end
+
+-- Add Rectangle:area() here
+
+
+local r = Rectangle.new(2, 3)
+print(r:area())  -- should print 6
+`,
+    solution: R`local Rectangle = {}
+Rectangle.__index = Rectangle
+
+function Rectangle.new(w, h)
+  local self = setmetatable({}, Rectangle)
+  self.w = w
+  self.h = h
+  return self
+end
+
+function Rectangle:area()
+  return self.w * self.h
+end
+
+local r = Rectangle.new(2, 3)
+print(r:area())  -- should print 6
+`,
+    hint: "`Rectangle.new` looks just like `Cat.new`, with `self.w = w` and `self.h = h` instead of name and lives.",
+    check: {
+      test: R`local a = Rectangle.new(2, 3)
+expect(type(a) == "table", "Rectangle.new should return the new rectangle.")
+expect(type(a.area) == "function", "Add a Rectangle:area() method, and use setmetatable in Rectangle.new.")
+expect(a:area() == 6, "A 2 by 3 rectangle should have an area of 6.")
+local b = Rectangle.new(4, 5)
+expect(b:area() == 20 and a:area() == 6, "Each rectangle needs its own size. A 4 by 5 rectangle should have an area of 20.")`
+    }
+  },
+  {
+    id: "metamethods", level: 8, title: "Teaching tables to add",
+    body: [
+      "Metatables can also teach your tables how to use `+`, `-`, and other symbols. These special keys are called **metamethods**.",
+      { list: [
+        "`__add` runs when you use `+`",
+        "`__sub` runs when you use `-`",
+        "`__tostring` runs when you `print` the table"
+      ] },
+      { code: R`local Vec = {}
+Vec.__index = Vec
+
+function Vec.new(x, y)
+  return setmetatable({ x = x, y = y }, Vec)
+end
+
+Vec.__add = function(a, b)
+  return Vec.new(a.x + b.x, a.y + b.y)
+end
+
+Vec.__tostring = function(v)
+  return "(" .. v.x .. ", " .. v.y .. ")"
+end
+
+print(Vec.new(1, 2) + Vec.new(3, 4))  -- (4, 6)` },
+      { what: "When Lua sees `+` between two vectors, it runs `__add`. When it prints the answer, it uses `__tostring`." }
+    ],
+    task: {
+      steps: ["Add `Vec.__sub`, so `-` subtracts two vectors. Copy `__add`, but use `-` instead of `+`."]
+    },
+    starter: R`local Vec = {}
+Vec.__index = Vec
+
+function Vec.new(x, y)
+  return setmetatable({ x = x, y = y }, Vec)
+end
+
+Vec.__add = function(a, b)
+  return Vec.new(a.x + b.x, a.y + b.y)
+end
+
+Vec.__tostring = function(v)
+  return "(" .. v.x .. ", " .. v.y .. ")"
+end
+
+-- Add Vec.__sub here
+
+
+print(Vec.new(5, 7) - Vec.new(1, 2))  -- should print (4, 5)
+`,
+    solution: R`local Vec = {}
+Vec.__index = Vec
+
+function Vec.new(x, y)
+  return setmetatable({ x = x, y = y }, Vec)
+end
+
+Vec.__add = function(a, b)
+  return Vec.new(a.x + b.x, a.y + b.y)
+end
+
+Vec.__tostring = function(v)
+  return "(" .. v.x .. ", " .. v.y .. ")"
+end
+
+Vec.__sub = function(a, b)
+  return Vec.new(a.x - b.x, a.y - b.y)
+end
+
+print(Vec.new(5, 7) - Vec.new(1, 2))  -- should print (4, 5)
+`,
+    hint: "Copy the three `__add` lines. Change `__add` to `__sub`, and both `+` signs to `-`.",
+    check: {
+      output: "(4, 5)",
+      test: R`local d = Vec.new(10, 3) - Vec.new(4, 1)
+expect(type(d) == "table" and d.x == 6 and d.y == 2, "Vec.new(10, 3) - Vec.new(4, 1) should give a vector with x = 6 and y = 2.")`
+    }
+  },
+  {
+    id: "error", level: 8, title: "Errors on purpose",
+    body: [
+      "An **error** stops your program. You can cause one on purpose with `error(\"message\")`. It's useful when your code gets something it can't handle.",
+      { code: R`local function setAge(age)
+  if age < 0 then
+    error("age can't be negative")
+  end
+  return age
+end
+
+print(setAge(12))
+print(setAge(-3))` },
+      { what: "Press **Run** on this one. The first line prints 12. The second one stops the program and shows your message." }
+    ],
+    task: {
+      steps: ["In `safeDivide`, if `b` is 0, call `error` with any message.", "Otherwise, return `a / b`."]
+    },
+    starter: R`local function safeDivide(a, b)
+
+end
+
+print(safeDivide(10, 2))  -- should print 5.0
+`,
+    solution: R`local function safeDivide(a, b)
+  if b == 0 then
+    error("can't divide by zero")
+  end
+  return a / b
+end
+
+print(safeDivide(10, 2))  -- should print 5.0
+`,
+    hint: "Copy the shape of `setAge`. Check `if b == 0 then`, and return `a / b` at the end.",
+    check: {
+      test: R`expect(safeDivide(10, 2) == 5, "safeDivide(10, 2) should give back 5.")
+expect(pcall(safeDivide, 1, 0) == false, "safeDivide(1, 0) should cause an error with error(...).")`
+    }
+  },
+  {
+    id: "pcall", level: 8, title: "Catching errors",
+    body: [
+      "`pcall` runs a function in “safe mode.” If there's an error, `pcall` catches it, and your program keeps going.",
+      "It gives back two things: `true` and the answer if it worked, or `false` and the error message if it didn't.",
+      { code: R`local function risky(n)
+  if n == 0 then
+    error("n was zero", 0)
+  end
+  return 10 / n
+end
+
+print(pcall(risky, 2))  -- true  5.0
+print(pcall(risky, 0))  -- false  n was zero` },
+      { what: "The second call has an error, but the program doesn't stop. `pcall` just gives back `false` and the message." }
+    ],
+    task: {
+      intro: "`safeDivide` is already done. Now fill in `tryDivide`.",
+      steps: [
+        "Call `safeDivide` with `pcall`: `local ok, result = pcall(safeDivide, a, b)`",
+        "If `ok` is true, return `result`.",
+        "Otherwise, return the text `can't divide by zero`."
+      ]
+    },
+    starter: R`local function safeDivide(a, b)
+  if b == 0 then
+    error("division by zero")
+  end
+  return a / b
+end
+
+local function tryDivide(a, b)
+
+end
+
+print(tryDivide(9, 3))  -- 3.0
+print(tryDivide(1, 0))  -- can't divide by zero
+`,
+    solution: R`local function safeDivide(a, b)
+  if b == 0 then
+    error("division by zero")
+  end
+  return a / b
+end
+
+local function tryDivide(a, b)
+  local ok, result = pcall(safeDivide, a, b)
+  if ok then
+    return result
+  end
+  return "can't divide by zero"
+end
+
+print(tryDivide(9, 3))  -- 3.0
+print(tryDivide(1, 0))  -- can't divide by zero
+`,
+    hint: "After the `pcall` line, write `if ok then return result end`. Then return the message.",
+    check: {
+      requires: [{ re: "pcall", msg: "Use `pcall` inside `tryDivide`." }],
+      test: R`expect(tryDivide(9, 3) == 3, "tryDivide(9, 3) should give back 3.")
+expect(tryDivide(1, 0) == "can't divide by zero", "tryDivide(1, 0) should give back the text: can't divide by zero")`
+    }
+  },
+  {
+    id: "coroutines", level: 8, title: "Pausing a function",
+    body: [
+      "A **coroutine** is a function that can pause in the middle, and continue later from the same spot.",
+      "`coroutine.wrap` makes one. Inside it, `coroutine.yield` pauses and hands back a value. Each time you call it, it runs until the next pause.",
+      { code: R`local function countTo(n)
+  return coroutine.wrap(function()
+    for i = 1, n do
+      coroutine.yield(i)
+    end
+  end)
+end
+
+local gen = countTo(3)
+print(gen())  -- 1
+print(gen())  -- 2
+print(gen())  -- 3` },
+      { what: "Each call to `gen()` runs the loop one more time, then pauses at `yield` and gives back the next number." }
+    ],
+    task: {
+      intro: "Fill in `squares`. It works like `countTo`.",
+      steps: ["Write a `for` loop from 1 to `n`.", "Inside it, call `coroutine.yield(i * i)`."],
+      outro: "Then each call gives the next square number: 1, 4, 9, 16."
+    },
+    starter: R`local function squares(n)
+  return coroutine.wrap(function()
+
+  end)
+end
+
+local gen = squares(4)
+print(gen(), gen(), gen(), gen())  -- 1  4  9  16
+`,
+    solution: R`local function squares(n)
+  return coroutine.wrap(function()
+    for i = 1, n do
+      coroutine.yield(i * i)
+    end
+  end)
+end
+
+local gen = squares(4)
+print(gen(), gen(), gen(), gen())  -- 1  4  9  16
+`,
+    hint: "It's the same as `countTo`, but yield `i * i` instead of `i`.",
+    check: {
+      requires: [{ re: "yield", msg: "Use `coroutine.yield` to hand out each square." }],
+      test: R`local g = squares(4)
+expect(type(g) == "function", "squares should give back the function that coroutine.wrap makes.")
+local a, b, c, d = g(), g(), g(), g()
+expect(a == 1 and b == 4 and c == 9 and d == 16, "squares(4) should give 1, 4, 9, 16 but gave " .. tostring(a) .. ", " .. tostring(b) .. ", " .. tostring(c) .. ", " .. tostring(d) .. ".")`
+    }
+  },
+  {
+    id: "word-counter", level: 8, title: "Final project: word counter",
+    body: [
+      "This last project uses lots of what you've learned: loops, tables, and text tools.",
+      "`text:gmatch(\"%a+\")` finds each word in some text, one at a time. `%a+` means “one or more letters in a row.”",
+      { code: R`for word in ("the moon and the stars"):gmatch("%a+") do
+  print(word)
+end` },
+      "To count things, use a table like a tally sheet. Each word is a key, and its count is the value.",
+      { code: R`local tally = {}
+tally["fig"] = (tally["fig"] or 0) + 1
+tally["fig"] = (tally["fig"] or 0) + 1
+print(tally["fig"])  -- 2` },
+      { what: "The first time, `tally[\"fig\"]` is nil, so `or 0` uses 0 as a backup. Then 1 is added. The second time, it goes from 1 to 2." }
+    ],
+    task: {
+      intro: "Fill in `countWords`.",
+      steps: [
+        "Loop over each word with `for word in text:gmatch(\"%a+\") do`.",
+        "Make the word lowercase with `word = word:lower()`.",
+        "Add 1 to its count: `counts[word] = (counts[word] or 0) + 1`."
+      ]
+    },
+    starter: R`local function countWords(text)
+  local counts = {}
+  -- fill in counts here
+  return counts
+end
+
+local counts = countWords("The moon, the MOON, the stars")
+print(counts.the, counts.moon, counts.stars)  -- 3  2  1
+`,
+    solution: R`local function countWords(text)
+  local counts = {}
+  for word in text:gmatch("%a+") do
+    word = word:lower()
+    counts[word] = (counts[word] or 0) + 1
+  end
+  return counts
+end
+
+local counts = countWords("The moon, the MOON, the stars")
+print(counts.the, counts.moon, counts.stars)  -- 3  2  1
+`,
+    hint: "Put the three steps inside `countWords`, between `local counts = {}` and `return counts`.",
+    check: {
+      test: R`local c = countWords("The moon, the MOON, the stars")
+expect(type(c) == "table", "countWords should give back a table.")
+expect(c.the == 3, "\"the\" appears 3 times when you ignore capital letters, but your table says " .. tostring(c.the) .. ".")
+expect(c.moon == 2 and c.stars == 1, "\"moon\" should count 2 and \"stars\" should count 1.")
+expect(c.The == nil and c.MOON == nil, "Make every word lowercase before counting it.")
+local c2 = countWords("b a b")
+expect(c2.b == 2 and c2.a == 1, "countWords(\"b a b\") should count b as 2 and a as 1.")`
+    }
+  }
+];
+
+if (typeof module !== "undefined") module.exports = { LESSONS: LESSONS, LEVELS: LEVELS };
+
+(function () {
+  "use strict";
+  var lex = LuaLex;
+  var TOTAL = LESSONS.length;
+  var STORE_KEY = "lua-phase-by-phase-v2";
+  var FENGARI_URL = "https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js";
+  var runner = null, engineFailed = false;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return lex.escapeHtml(String(s)).replace(/"/g, "&quot;"); }
+  function fmt(s) {
+    return esc(s)
+      .replace(/`([^`]+)`/g, function (_, c) { return "<code>" + c + "</code>"; })
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  }
+
+  var ICON = {
+    check: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    lock: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5" fill="currentColor"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    play: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 3v10l8.5-5z" fill="currentColor"/></svg>',
+    warn: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 5.5v5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="14" r="1.2" fill="currentColor"/></svg>',
+    almost: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 1.5a8.5 8.5 0 010 17z" fill="currentColor"/></svg>',
+    done: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="currentColor"/><path d="M5.8 10.4l2.8 2.7 5.6-6" fill="none" stroke="var(--good-soft)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  /* ---------------- Saved state (this browser only) ---------------- */
+  function freshState() { return { done: {}, unlockedAll: false, current: LESSONS[0].id, drafts: {}, attempts: {} }; }
+  var state = freshState();
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (saved && typeof saved === "object") {
+      state = freshState();
+      Object.keys(saved).forEach(function (k) { state[k] = saved[k]; });
+    } else {
+      // Lessons changed since v1: keep finished lessons that still exist, drop old saved code.
+      var old = JSON.parse(localStorage.getItem("lua-phase-by-phase-v1") || "null");
+      if (old && old.done) {
+        LESSONS.forEach(function (l, i) { if (old.done[l.id] && i < 5) state.done[l.id] = true; });
+        state.unlockedAll = !!old.unlockedAll;
+      }
+    }
+  } catch (e) { /* storage unavailable: start fresh */ }
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+
+  function indexOf(id) { for (var i = 0; i < TOTAL; i++) if (LESSONS[i].id === id) return i; return -1; }
+  function isUnlocked(i) { return i === 0 || state.unlockedAll || !!state.done[LESSONS[i].id] || !!state.done[LESSONS[i - 1].id]; }
+  function doneCount() { var n = 0; LESSONS.forEach(function (l) { if (state.done[l.id]) n++; }); return n; }
+  var currentIndex = 0, lessonOpen = false;
+
+  /* ---------------- Moon ---------------- */
+  function moonPath(f, cx, cy, r) {
+    if (f <= 0.002) return "";
+    if (f >= 0.998) return "M" + cx + " " + (cy - r) + "A" + r + " " + r + " 0 1 1 " + cx + " " + (cy + r) + "A" + r + " " + r + " 0 1 1 " + cx + " " + (cy - r) + "Z";
+    var rx = (Math.abs(1 - 2 * f) * r).toFixed(3);
+    return "M" + cx + " " + (cy - r) + "A" + r + " " + r + " 0 0 1 " + cx + " " + (cy + r) +
+      "A" + rx + " " + r + " 0 0 " + (f > 0.5 ? 1 : 0) + " " + cx + " " + (cy - r) + "Z";
+  }
+  function moonSvg(f, attrs) {
+    return '<svg viewBox="0 0 40 40" aria-hidden="true"' + (attrs || "") + '><circle class="moon-bg" cx="20" cy="20" r="18"/>' +
+      '<path class="moon-lit" d="' + moonPath(f, 20, 20, 18) + '"/></svg>';
+  }
+  function phaseName(f) {
+    if (f <= 0) return "New moon";
+    if (f >= 1) return "Full moon";
+    if (f < 0.45) return "Waxing crescent";
+    if (f <= 0.55) return "First quarter";
+    return "Waxing gibbous";
+  }
+  var shownFrac = null;
+  function drawProgress(f, labelFrac) {
+    shownFrac = f;
+    var d = moonPath(f, 20, 20, 18);
+    var paths = document.querySelectorAll("[data-moon=course] .moon-lit");
+    for (var i = 0; i < paths.length; i++) paths[i].setAttribute("d", d);
+    var n = doneCount(), lf = labelFrac == null ? f : labelFrac;
+    $("phase-label").innerHTML = '<span class="phase-name">' + phaseName(lf) + ' · </span><b>' + n + "</b> of " + TOTAL;
+    $("moon-title").textContent = phaseName(lf);
+    $("moon-sub").textContent = n === 0 ? "Pass a lesson to light up the moon." :
+      n === TOTAL ? "All " + TOTAL + " lessons complete." : n + " of " + TOTAL + " lessons complete";
+  }
+  function renderProgress(animate) {
+    var target = doneCount() / TOTAL;
+    var from = shownFrac == null ? target : shownFrac;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!animate || reduce || from === target) { drawProgress(target); return; }
+    var t0 = null, dur = 1200;
+    function step(now) {
+      if (t0 === null) t0 = now;
+      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      drawProgress(from + (target - from) * e, target);
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------------- Course map ---------------- */
+  function renderNav() {
+    var html = "";
+    LEVELS.forEach(function (lv) {
+      var items = [];
+      LESSONS.forEach(function (l, i) { if (l.level === lv.n) items.push(i); });
+      var d = items.filter(function (i) { return state.done[LESSONS[i].id]; }).length;
+      html += '<section class="level"><div class="level-head">' + moonSvg(d / items.length) +
+        "<span>" + lv.n + " · " + esc(lv.name) + '</span><span class="count">' + d + "/" + items.length + "</span></div>";
+      items.forEach(function (i) {
+        var l = LESSONS[i], done = !!state.done[l.id], open = isUnlocked(i), cur = i === currentIndex;
+        var mark = done ? ICON.check : (open ? String(i + 1) : ICON.lock);
+        html += '<button type="button" class="lesson-link' + (done ? " is-done" : "") + (cur ? " is-current" : "") +
+          '" data-open="' + i + '"' + (open ? "" : " disabled") + (cur ? ' aria-current="page"' : "") + ">" +
+          '<span class="mark">' + mark + "</span><span>" + esc(l.title) +
+          (done ? '<span class="sr-only"> (completed)</span>' : "") + (open ? "" : '<span class="sr-only"> (locked)</span>') +
+          "</span></button>";
+      });
+      html += "</section>";
+    });
+    $("nav-levels").innerHTML = html;
+    renderNavTools();
+  }
+
+  var confirmMode = null;
+  var installPrompt = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    installPrompt = e;
+    if ($("nav-tools")) renderNavTools();
+  });
+  window.addEventListener("appinstalled", function () { installPrompt = null; if ($("nav-tools")) renderNavTools(); });
+  function renderNavTools() {
+    var html = "<p>Your progress and code are saved on this device.</p>";
+    if (installPrompt) html += '<button type="button" class="btn btn-primary" data-act="install">Install this app</button>';
+    if (confirmMode === "unlock") {
+      html += '<div><p>Unlock all ' + TOTAL + ' lessons so you can jump ahead?</p><div class="confirm-row">' +
+        '<button type="button" class="btn btn-primary" data-act="unlock-yes">Unlock all</button>' +
+        '<button type="button" class="btn" data-act="cancel">Cancel</button></div></div>';
+    } else if (state.unlockedAll) {
+      html += "<p>Every lesson is unlocked.</p>";
+    } else {
+      html += '<button type="button" class="link-btn" data-act="unlock">Already know some Lua? Unlock every lesson</button>';
+    }
+    if (confirmMode === "reset") {
+      html += '<div><p>Erase your progress and all saved code?</p><div class="confirm-row">' +
+        '<button type="button" class="btn btn-primary" data-act="reset-yes">Erase progress</button>' +
+        '<button type="button" class="btn" data-act="cancel">Cancel</button></div></div>';
+    } else {
+      html += '<button type="button" class="link-btn" data-act="reset">Start over</button>';
+    }
+    $("nav-tools").innerHTML = html;
+  }
+
+  function openNav() {
+    document.body.classList.add("nav-open");
+    $("scrim").hidden = false;
+    $("menu-btn").setAttribute("aria-expanded", "true");
+    var cur = document.querySelector(".lesson-link.is-current");
+    if (cur) cur.focus({ preventScroll: false });
+  }
+  function closeNav() {
+    if (!document.body.classList.contains("nav-open")) return;
+    document.body.classList.remove("nav-open");
+    $("scrim").hidden = true;
+    $("menu-btn").setAttribute("aria-expanded", "false");
+  }
+
+  /* ---------------- Editor ---------------- */
+  function createEditor() {
+    var ta = $("code-input"), hl = $("code-hl"), gutter = $("code-gutter"), scroller = $("code-scroll"), measure = $("code-measure");
+    var busy = false, tabEscape = false, lastLines = -1, errLine = null, charW = 0, onChange = null, onRun = null;
+    var SMART = { "“": '"', "”": '"', "„": '"', "‘": "'", "’": "'", "—": "--", "–": "--" };
+    var SMART_RE = /[“”„‘’—–]/;
+    var canFocusQuietly = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    function measureChar() { var w = measure.getBoundingClientRect().width; if (w) charW = w / 10; }
+    function renderGutter(lines) {
+      var out = "";
+      for (var i = 1; i <= lines; i++) out += (i === errLine ? '<span class="ln-err">' + i + "</span>" : i) + (i < lines ? "\n" : "");
+      gutter.innerHTML = out;
+    }
+    function render() {
+      var v = ta.value;
+      hl.innerHTML = lex.highlight(v) + (v === "" || v.charAt(v.length - 1) === "\n" ? " " : "");
+      var lines = v.split("\n").length;
+      if (lines !== lastLines) { lastLines = lines; renderGutter(lines); }
+    }
+    function keepCaretVisible() {
+      if (!charW) measureChar();
+      if (!charW) return;
+      var v = ta.value, pos = ta.selectionEnd;
+      var col = pos - (v.lastIndexOf("\n", pos - 1) + 1);
+      var gw = gutter.offsetWidth, x = gw + 14 + col * charW;
+      var left = scroller.scrollLeft, width = scroller.clientWidth;
+      if (x > left + width - 28) scroller.scrollLeft = x - width + 56;
+      else if (x < left + gw + 14) scroller.scrollLeft = Math.max(0, x - gw - 40);
+    }
+    function changed() {
+      render();
+      keepCaretVisible();
+      if (errLine !== null) { errLine = null; renderGutter(lastLines); }
+      if (onChange) onChange(ta.value);
+    }
+    function apply(edit, quiet) {
+      if (!edit) return;
+      var before = ta.value;
+      var expected = before.slice(0, edit.start) + edit.text + before.slice(edit.end);
+      var selEnd = edit.selEnd != null ? edit.selEnd : edit.caret;
+      var focused = document.activeElement === ta;
+      if (!focused && !(quiet && !canFocusQuietly)) { ta.focus({ preventScroll: true }); focused = true; }
+      if (edit.text === "" && edit.start === edit.end) { ta.setSelectionRange(edit.caret, selEnd); keepCaretVisible(); return; }
+      if (focused) {
+        ta.setSelectionRange(edit.start, edit.end);
+        busy = true;
+        try {
+          if (edit.text === "") document.execCommand("delete", false);
+          else document.execCommand("insertText", false, edit.text);
+        } catch (e) { /* fall through to direct edit */ }
+        busy = false;
+      }
+      if (ta.value !== expected) ta.value = expected;
+      ta.setSelectionRange(edit.caret, selEnd);
+      changed();
+    }
+    function indent(outdent) {
+      var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+      if (!outdent && s === e) { apply({ start: s, end: s, text: "  ", caret: s + 2 }); return; }
+      var ls = v.lastIndexOf("\n", s - 1) + 1;
+      var endAt = e > s && v.charAt(e - 1) === "\n" ? e - 1 : e;
+      var le = v.indexOf("\n", endAt); if (le < 0) le = v.length;
+      var block = v.slice(ls, le);
+      var next = block.split("\n").map(function (line) { return outdent ? line.replace(/^ {1,2}/, "") : "  " + line; }).join("\n");
+      if (next === block) return;
+      if (s === e) {
+        var removed = block.length - next.length;
+        var caret = Math.max(ls, s - removed);
+        apply({ start: ls, end: le, text: next, caret: caret });
+      } else {
+        apply({ start: ls, end: le, text: next, caret: ls, selEnd: ls + next.length });
+      }
+    }
+    function normalizeSmart() {
+      var v = ta.value, pos = ta.selectionStart, out = "", np = pos;
+      for (var i = 0; i < v.length; i++) {
+        var r = SMART[v.charAt(i)];
+        if (r) { out += r; if (i < pos) np += r.length - 1; } else out += v.charAt(i);
+      }
+      ta.value = out;
+      ta.setSelectionRange(np, np);
+    }
+
+    ta.addEventListener("beforeinput", function (e) {
+      if (busy || e.isComposing) return;
+      var t = e.inputType, s = ta.selectionStart, en = ta.selectionEnd, v = ta.value;
+      if (t === "insertText" && typeof e.data === "string" && e.data.length === 1) {
+        if (!e.cancelable) return;
+        var ch = SMART[e.data] || e.data;
+        var edit = ch.length === 1 ? lex.typeChar(v, s, en, ch) : null;
+        if (edit) { e.preventDefault(); apply(edit); return; }
+        if (ch !== e.data) { e.preventDefault(); apply({ start: s, end: en, text: ch, caret: s + ch.length }); }
+        return;
+      }
+      if ((t === "insertLineBreak" || t === "insertParagraph") && e.cancelable) {
+        e.preventDefault(); apply(lex.enter(v, s, en)); return;
+      }
+      if (t === "deleteContentBackward" && e.cancelable) {
+        var bs = lex.backspace(v, s, en);
+        if (bs) { e.preventDefault(); apply(bs); }
+      }
+    });
+    ta.addEventListener("input", function () {
+      if (busy) return;
+      if (SMART_RE.test(ta.value)) normalizeSmart();
+      changed();
+    });
+    ta.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { tabEscape = true; return; }
+      if (e.key === "Tab" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (tabEscape) { tabEscape = false; return; }
+        e.preventDefault(); indent(e.shiftKey); return;
+      }
+      tabEscape = false;
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (onRun) onRun(); }
+    });
+    document.addEventListener("selectionchange", function () { if (document.activeElement === ta) keepCaretVisible(); });
+    window.addEventListener("resize", function () { charW = 0; });
+
+    return {
+      value: function () { return ta.value; },
+      setValue: function (v) { ta.value = v; lastLines = -1; errLine = null; render(); scroller.scrollLeft = 0; },
+      replaceAll: function (v) { apply({ start: 0, end: ta.value.length, text: v, caret: v.length }, true); },
+      insertSymbol: function (sym) {
+        if (sym === "Tab") { indent(false); return; }
+        var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+        var edit = sym.length === 1 ? lex.typeChar(v, s, e, sym) : null;
+        apply(edit || { start: s, end: e, text: sym, caret: s + sym.length });
+      },
+      markLine: function (n) { errLine = n; renderGutter(lastLines); },
+      remeasure: function () { charW = 0; measureChar(); },
+      onChange: function (fn) { onChange = fn; },
+      onRun: function (fn) { onRun = fn; }
+    };
+  }
+
+  /* ---------------- Lesson page ---------------- */
+  var editor, exampleCode = [], draftTimer = null;
+
+  function saveDraftNow() {
+    if (!lessonOpen) return;
+    clearTimeout(draftTimer);
+    var l = LESSONS[currentIndex], v = editor.value();
+    if (v === l.starter) delete state.drafts[l.id]; else state.drafts[l.id] = v;
+    save();
+  }
+
+  function bodyHtml(l) {
+    var html = "", n = 0;
+    exampleCode = [];
+    l.body.forEach(function (b) {
+      if (typeof b === "string") { html += "<p>" + fmt(b) + "</p>"; return; }
+      if (b.code) {
+        exampleCode.push(b.code);
+        html += '<figure class="example"><div class="example-bar"><span>example ' + (n + 1) + '</span>' +
+          '<button type="button" class="btn-night" data-run-ex="' + n + '">' + ICON.play + " Run</button></div>" +
+          '<pre class="code-block">' + lex.highlight(b.code) + '</pre><div class="example-out" id="ex-out-' + n + '" aria-live="polite" hidden></div></figure>';
+        n++; return;
+      }
+      if (b.what) { html += '<p class="what"><strong>What happens:</strong> ' + fmt(b.what) + "</p>"; return; }
+      if (b.note) { html += '<div class="note"><span class="note-label">Good to know</span><p>' + fmt(b.note) + "</p></div>"; return; }
+      if (b.list) { html += "<ul>" + b.list.map(function (x) { return "<li>" + fmt(x) + "</li>"; }).join("") + "</ul>"; return; }
+      if (b.steps) { html += '<ol class="steps">' + b.steps.map(function (x) { return "<li><span>" + fmt(x) + "</span></li>"; }).join("") + "</ol>"; return; }
+      if (b.table) {
+        html += '<div class="table-wrap"><table><thead><tr>' + b.table[0].map(function (c) { return "<th>" + fmt(c) + "</th>"; }).join("") +
+          "</tr></thead><tbody>" + b.table.slice(1).map(function (r) {
+            return "<tr>" + r.map(function (c) { return "<td>" + fmt(c) + "</td>"; }).join("") + "</tr>";
+          }).join("") + "</tbody></table></div>";
+      }
+    });
+    return html;
+  }
+
+  function pagerHtml(i) {
+    var html = '<nav class="pager" aria-label="Lesson navigation">';
+    html += i > 0 ? '<button type="button" class="btn" data-open="' + (i - 1) + '">← ' + esc(LESSONS[i - 1].title) + "</button>" : "<span></span>";
+    if (i < TOTAL - 1) {
+      if (isUnlocked(i + 1)) html += '<button type="button" class="btn' + (state.done[LESSONS[i].id] ? " btn-primary" : "") + '" data-open="' + (i + 1) + '">' + esc(LESSONS[i + 1].title) + " →</button>";
+      else html += '<span class="locked-note">Pass the exercise to unlock the next lesson.</span>';
+    }
+    return html + "</nav>";
+  }
+
+  function renderLessonText() {
+    var i = currentIndex, l = LESSONS[i], lv = LEVELS[l.level - 1];
+    $("lesson").innerHTML =
+      '<div class="eyebrow"><span>Level ' + l.level + " · " + esc(lv.name) + "</span><span>Lesson " + (i + 1) + " of " + TOTAL + "</span>" +
+      (state.done[l.id] ? '<span class="done-chip">Completed</span>' : "") + "</div>" +
+      '<h1 id="lesson-title">' + esc(l.title) + '</h1><div class="lesson-body">' + bodyHtml(l) + "</div>" + pagerHtml(i);
+  }
+
+  function openLesson(i, initial) {
+    if (i < 0 || i >= TOTAL || !isUnlocked(i)) return;
+    saveDraftNow();
+    currentIndex = i;
+    var l = LESSONS[i];
+    state.current = l.id; save();
+    renderLessonText();
+
+    var task = typeof l.task === "string" ? { intro: l.task } : l.task;
+    $("task-text").innerHTML =
+      (task.intro ? "<p>" + fmt(task.intro) + "</p>" : "") +
+      (task.steps ? '<ol class="steps">' + task.steps.map(function (x) { return "<li><span>" + fmt(x) + "</span></li>"; }).join("") + "</ol>" : "") +
+      (task.outro ? '<p class="task-outro">' + fmt(task.outro) + "</p>" : "");
+    var exp = l.check && typeof l.check.output === "string";
+    $("expected").hidden = !exp;
+    if (exp) $("expected-out").textContent = l.check.output;
+    $("hint-box").hidden = true;
+    $("hint-box").innerHTML = "<b>Hint:</b> " + fmt(l.hint);
+    $("hint-btn").setAttribute("aria-expanded", "false");
+    $("solution-box").hidden = true;
+    updateSolutionButton();
+
+    editor.setValue(state.drafts[l.id] != null ? state.drafts[l.id] : l.starter);
+    lessonOpen = true;
+    $("console-out").innerHTML = '<span class="muted">Press Run to see what your code prints.</span>';
+    var v = $("verdict");
+    if (state.done[l.id]) {
+      v.className = "verdict info";
+      v.innerHTML = "<p>You've already passed this lesson. Run your code again anytime, or move on.</p>";
+    } else { v.className = "verdict"; v.innerHTML = ""; }
+
+    renderNav();
+    closeNav();
+    if (!initial) window.scrollTo(0, 0);
+    try { history.replaceState(null, "", "#" + l.id); } catch (e) { /* ignore */ }
+  }
+
+  function updateSolutionButton() {
+    var l = LESSONS[currentIndex];
+    $("solution-btn").hidden = !(state.done[l.id] || (state.attempts[l.id] || 0) >= 1);
+  }
+
+  /* ---------------- Running and checking ---------------- */
+  function setRunState(text) { $("run-state").textContent = text; }
+
+  function errorLine(e) {
+    if (e.kind === "timeout") return "Stopped: the program ran too long.";
+    if (e.duringCheck) return "Error while checking your code: " + e.message;
+    return (e.line ? "Error on line " + e.line + ": " : "Error: ") + e.message;
+  }
+
+  function showOutput(res) {
+    var html = "";
+    if (res.output) html += esc(res.output.replace(/\n$/, ""));
+    if (res.truncated) html += '\n<span class="muted">(The output was very long, so it was cut off here.)</span>';
+    if (res.error) html += (html ? "\n" : "") + '<span class="err">' + esc(errorLine(res.error)) + "</span>";
+    if (!html) html = '<span class="muted">Your code ran, but it didn\'t print anything.</span>';
+    $("console-out").innerHTML = html;
+  }
+
+  function linesHtml(text, mark) {
+    return text.split("\n").map(function (line, i) {
+      var s = esc(line) || " ";
+      return i === mark ? "<mark>" + s + "</mark>" : s;
+    }).join("\n");
+  }
+
+  function showVerdict(res) {
+    var v = $("verdict"), html, i = currentIndex;
+    v.className = "verdict " + res.status;
+    if (res.status === "pass") {
+      if (i === TOTAL - 1) {
+        html = "<h3>" + ICON.done + "Full moon. You finished the course.</h3>" +
+          "<p>You went from <code>print</code> to coroutines and metatables. Good places to keep going:</p><ul>" +
+          '<li><a href="https://www.lua.org/pil/contents.html" target="_blank" rel="noopener">Programming in Lua</a>, the book by Lua\'s lead designer. The first edition is free to read online.</li>' +
+          '<li>The <a href="https://www.lua.org/manual/5.4/" target="_blank" rel="noopener">Lua reference manual</a>, which documents every built-in function.</li>' +
+          '<li>The <a href="https://create.roblox.com/docs/luau" target="_blank" rel="noopener">Luau docs</a> from Roblox, if you want to make games.</li></ul>';
+      } else {
+        html = "<h3>" + ICON.done + "Lesson complete</h3><p>Your code passed every check. The next lesson is unlocked.</p>" +
+          '<div class="actions"><button type="button" class="btn btn-primary" data-open="' + (i + 1) + '">Next: ' + esc(LESSONS[i + 1].title) + " →</button></div>";
+      }
+    } else if (res.status === "error") {
+      var e = res.error;
+      var title = e.kind === "timeout" ? "Your program didn't finish" :
+        e.kind === "syntax" ? (e.line ? "Lua can't read line " + e.line : "Lua can't read your code") :
+        e.duringCheck ? "Your code crashed while being checked" :
+        (e.line ? "Error on line " + e.line : "Your code hit an error");
+      html = "<h3>" + ICON.warn + esc(title) + "</h3>";
+      if (e.friendly) html += "<p>" + fmt(e.friendly) + "</p>";
+      if (e.kind !== "timeout") html += '<p class="lua-said">Lua\'s message: <span class="mono">' + esc(e.message) + "</span></p>";
+    } else {
+      html = "<h3>" + ICON.almost + "Not quite yet</h3><p>" + fmt(res.message) + "</p>";
+      if (res.kind === "output") {
+        html += '<div class="diff"><div><span class="panel-label">Expected</span><pre>' + linesHtml(res.expected, res.diffLine) +
+          '</pre></div><div><span class="panel-label">Your output</span><pre>' + (res.got ? linesHtml(res.got, res.diffLine) : "(nothing)") + "</pre></div></div>";
+      }
+    }
+    v.innerHTML = html;
+  }
+
+  function runCurrent() {
+    if (!runner) {
+      showVerdict({ status: "error", error: { kind: "engine", line: null, message: engineFailed ? "The Lua engine didn't load." : "Lua is still loading.", friendly: engineFailed ? "This page loads Lua from cdn.jsdelivr.net. Check your connection, then reload the page." : "Give it a second, then press Run again." } });
+      return;
+    }
+    var l = LESSONS[currentIndex], code = editor.value(), idx = currentIndex;
+    saveDraftNow();
+    setRunState("Running…");
+    $("run-btn").disabled = true;
+    setTimeout(function () {
+      var res;
+      try { res = checkLesson(l, code, runner, lex); }
+      catch (err) { res = { status: "error", output: "", error: { kind: "runtime", line: null, message: String(err && err.message || err), friendly: null } }; }
+      $("run-btn").disabled = false;
+      setRunState("");
+      if (idx !== currentIndex) return;
+      showOutput(res);
+      showVerdict(res);
+      if (res.error && res.error.line && !res.error.duringCheck) editor.markLine(res.error.line);
+      if (res.status === "pass") {
+        if (!state.done[l.id]) {
+          state.done[l.id] = true; save();
+          renderNav(); renderLessonText(); renderProgress(true);
+        }
+      } else {
+        state.attempts[l.id] = (state.attempts[l.id] || 0) + 1; save();
+      }
+      updateSolutionButton();
+      if (window.matchMedia("(max-width: 1279px)").matches) {
+        var box = $("console").getBoundingClientRect();
+        if (box.top > window.innerHeight - 80 || box.bottom < 0) $("console").scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+    }, 16);
+  }
+
+  function runExample(n) {
+    var out = $("ex-out-" + n);
+    if (!out) return;
+    out.hidden = false;
+    if (!runner) { out.innerHTML = '<span class="out-label">Output</span>' + (engineFailed ? "The Lua engine didn't load. Reload the page to try again." : "Lua is still loading. Try again in a second."); return; }
+    var res = runner.run(exampleCode[n], null);
+    var html = res.output ? esc(res.output.replace(/\n$/, "")) : "";
+    if (res.error) {
+      var e = { kind: res.error.kind, line: res.error.line, message: res.error.message };
+      html += (html ? "\n" : "") + '<span class="err">' + esc(errorLine(e)) + "</span>";
+    }
+    out.innerHTML = '<span class="out-label">Output</span>' + (html || "(nothing printed)");
+  }
+
+  /* ---------------- Engine ---------------- */
+  function loadEngine() {
+    setRunState("Loading Lua…");
+    $("run-btn").disabled = true;
+    // The installable app ships its own copy of the engine; fall back to the CDN copy.
+    var urls = window.LUA_ENGINE_URL ? [window.LUA_ENGINE_URL, FENGARI_URL] : [FENGARI_URL];
+    function tryNext(i) {
+      if (i >= urls.length) { engineFail(); return; }
+      var s = document.createElement("script");
+      s.src = urls[i];
+      s.async = true;
+      s.onload = function () {
+        if (window.fengari && window.fengari.lua) {
+          runner = createLuaRunner(window.fengari);
+          setRunState("Lua 5.3");
+          $("run-btn").disabled = false;
+        } else tryNext(i + 1);
+      };
+      s.onerror = function () { tryNext(i + 1); };
+      document.head.appendChild(s);
+    }
+    tryNext(0);
+  }
+  function engineFail() {
+    engineFailed = true;
+    setRunState("Lua didn't load");
+    $("run-btn").disabled = false;
+  }
+
+  /* ---------------- Wiring ---------------- */
+  function init() {
+    editor = createEditor();
+    editor.onRun(runCurrent);
+    editor.onChange(function () {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraftNow, 400);
+    });
+
+    var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+    $("run-kbd").textContent = isMac ? "⌘↵" : "Ctrl+↵";
+
+    var syms = ["Tab", "(", ")", '"', "=", ".", "..", ":", ",", "{", "}", "[", "]", "#", "~", "-", "+", "*", "/", "%", "<", ">", "_", "'"];
+    $("symbols").innerHTML = syms.map(function (s) {
+      return '<button type="button" class="sym" data-sym="' + esc(s) + '" aria-label="Insert ' + (s === "Tab" ? "indent" : esc(s)) + '">' + (s === "Tab" ? "⇥" : esc(s)) + "</button>";
+    }).join("");
+    $("symbols").addEventListener("pointerdown", function (e) { if (e.target.closest(".sym")) e.preventDefault(); });
+    $("symbols").addEventListener("mousedown", function (e) { if (e.target.closest(".sym")) e.preventDefault(); });
+    $("symbols").addEventListener("click", function (e) {
+      var b = e.target.closest(".sym"); if (b) editor.insertSymbol(b.getAttribute("data-sym"));
+    });
+
+    $("run-btn").addEventListener("click", runCurrent);
+    $("hint-btn").addEventListener("click", function () {
+      var box = $("hint-box"); box.hidden = !box.hidden;
+      this.setAttribute("aria-expanded", String(!box.hidden));
+    });
+    $("reset-btn").addEventListener("click", function () {
+      editor.replaceAll(LESSONS[currentIndex].starter);
+      $("verdict").className = "verdict"; $("verdict").innerHTML = "";
+    });
+    $("solution-btn").addEventListener("click", function () {
+      var box = $("solution-box");
+      if (!box.hidden) { box.hidden = true; return; }
+      $("solution-code").innerHTML = lex.highlight(LESSONS[currentIndex].solution);
+      box.hidden = false;
+      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+    $("use-solution").addEventListener("click", function () {
+      editor.replaceAll(LESSONS[currentIndex].solution);
+      $("solution-box").hidden = true;
+    });
+    $("hide-solution").addEventListener("click", function () { $("solution-box").hidden = true; });
+
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest("[data-open]");
+      if (t && !t.disabled) { openLesson(parseInt(t.getAttribute("data-open"), 10)); return; }
+      var ex = e.target.closest("[data-run-ex]");
+      if (ex) { runExample(parseInt(ex.getAttribute("data-run-ex"), 10)); return; }
+      var act = e.target.closest("[data-act]");
+      if (act) {
+        var a = act.getAttribute("data-act");
+        if (a === "install" && installPrompt) {
+          installPrompt.prompt();
+          installPrompt.userChoice.then(function () { installPrompt = null; renderNavTools(); }, function () {});
+          return;
+        }
+        if (a === "unlock" || a === "reset") confirmMode = a;
+        else if (a === "cancel") confirmMode = null;
+        else if (a === "unlock-yes") { confirmMode = null; state.unlockedAll = true; save(); renderLessonText(); }
+        else if (a === "reset-yes") {
+          confirmMode = null; lessonOpen = false; state = freshState(); save();
+          renderProgress(false); openLesson(0); return;
+        }
+        renderNav();
+      }
+    });
+    $("menu-btn").addEventListener("click", function () {
+      if (document.body.classList.contains("nav-open")) closeNav(); else openNav();
+    });
+    $("nav-close").addEventListener("click", closeNav);
+    $("scrim").addEventListener("click", closeNav);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeNav(); });
+    window.addEventListener("hashchange", function () {
+      var i = indexOf(location.hash.replace(/^#/, ""));
+      if (i >= 0 && i !== currentIndex && isUnlocked(i)) openLesson(i);
+    });
+    window.addEventListener("pagehide", saveDraftNow);
+
+    var start = indexOf((location.hash || "").replace(/^#/, ""));
+    if (start < 0 || !isUnlocked(start)) start = indexOf(state.current);
+    if (start < 0 || !isUnlocked(start)) start = 0;
+    renderProgress(false);
+    openLesson(start, true);
+    loadEngine();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { editor.remeasure(); });
+  }
+
+  init();
+})();
+
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+}
+</script>
+
+</body>
+</html>

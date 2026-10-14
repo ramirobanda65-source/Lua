@@ -1,0 +1,29 @@
+{
+  "id": "./",
+  "name": "Lua Phase by Phase",
+  "short_name": "Lua Phase",
+  "description": "Learn Lua one small step at a time, with a live code editor.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0B0E21",
+  "theme_color": "#121634",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
